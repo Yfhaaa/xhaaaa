@@ -1,0 +1,613 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.gengdan.gdpm.mapper.ReportMapper">
+    <select id="roles" resultType="string">
+        SELECT
+            r.code
+        FROM
+            sys_role r
+            JOIN sys_user_role ur ON ur.role_id = r.id
+        WHERE
+            ur.user_id = #{userId}
+        ORDER BY
+            r.id
+    </select>
+    <select id="permissions" resultType="string">
+        SELECT DISTINCT
+            p.code
+        FROM
+            sys_permission p
+            JOIN sys_role_permission rp ON rp.permission_id = p.id
+            JOIN sys_user_role ur ON ur.role_id = rp.role_id
+        WHERE
+            ur.user_id = #{userId}
+        ORDER BY
+            p.code
+    </select>
+    <select id="users" resultType="map">
+        SELECT
+            u.id,
+            u.username,
+            u.name,
+            u.major_id,
+            u.class_id,
+            u.cohort,
+            u.enabled,
+            r.id role_id,
+            r.code role_code,
+            r.name role_name,
+            m.name major_name,
+            c.name class_name
+        FROM
+            sys_user u
+            JOIN sys_user_role ur ON ur.user_id = u.id
+            JOIN sys_role r ON r.id = ur.role_id
+            LEFT JOIN major m ON m.id = u.major_id
+            LEFT JOIN school_class c ON c.id = u.class_id
+        ORDER BY
+            u.id
+    </select>
+    <select id="teachers" resultType="map">
+        SELECT
+            u.id,
+            u.name
+        FROM
+            sys_user u
+            JOIN sys_user_role ur ON ur.user_id = u.id
+            JOIN sys_role r ON r.id = ur.role_id
+        WHERE
+            r.code = 'TEACHER'
+            AND u.enabled = 1
+        ORDER BY
+            u.id
+    </select>
+    <select id="students" resultType="map">
+        SELECT
+            u.id student_id,
+            u.username,
+            u.name,
+            u.major_id,
+            u.class_id,
+            u.cohort,
+            m.name major_name,
+            c.name class_name,
+            a.topic_id,
+            a.teacher_id,
+            t.title topic_title,
+            teacher.name teacher_name
+        FROM
+            sys_user u
+            JOIN sys_user_role ur ON ur.user_id = u.id
+            JOIN sys_role r ON r.id = ur.role_id
+            AND r.code = 'STUDENT'
+            LEFT JOIN major m ON m.id = u.major_id
+            LEFT JOIN school_class c ON c.id = u.class_id
+            LEFT JOIN student_assignment a ON a.student_id = u.id
+            LEFT JOIN topic_info t ON t.id = a.topic_id
+            LEFT JOIN sys_user teacher ON teacher.id = a.teacher_id
+        WHERE
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>u.id=#{scope.userId}</when>
+            <otherwise>a.teacher_id=#{scope.userId}</otherwise>
+        </choose>
+        ORDER BY
+            u.id
+    </select>
+    <select id="topics" resultType="map">
+        SELECT
+            t.*,
+            u.name teacher_name,
+            m.name major_name,
+            (
+                SELECT
+                    COUNT(*)
+                FROM
+                    student_assignment a
+                WHERE
+                    a.topic_id = t.id
+            ) selected_count
+        FROM
+            topic_info t
+            JOIN sys_user u ON u.id = t.teacher_id
+            JOIN major m ON m.id = t.major_id
+        WHERE
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>t.status='已通过'</when>
+            <otherwise>t.teacher_id=#{scope.userId}</otherwise>
+        </choose>
+        ORDER BY
+            t.id DESC
+    </select>
+    <select id="selections" resultType="map">
+        SELECT
+            s.*,
+            t.title,
+            t.teacher_id,
+            u.name student_name,
+            teacher.name teacher_name
+        FROM
+            topic_selection s
+            JOIN topic_info t ON t.id = s.topic_id
+            JOIN sys_user u ON u.id = s.student_id
+            JOIN sys_user teacher ON teacher.id = t.teacher_id
+        WHERE
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>s.student_id=#{scope.userId}</when>
+            <otherwise>t.teacher_id=#{scope.userId}</otherwise>
+        </choose>
+        ORDER BY
+            s.id DESC
+    </select>
+    <select id="guidance" resultType="map">
+        SELECT
+            g.*,
+            u.name student_name,
+            t.name teacher_name
+        FROM
+            guidance_record g
+            JOIN sys_user u ON u.id = g.student_id
+            JOIN sys_user t ON t.id = g.teacher_id
+        WHERE
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>g.student_id=#{scope.userId}</when>
+            <otherwise>
+                EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=g.student_id AND
+                                        scoped.teacher_id=#{scope.userId})
+            </otherwise>
+        </choose>
+        ORDER BY
+            g.guidance_at DESC
+    </select>
+    <select id="defenses" resultType="map">
+        SELECT
+            d.*,
+            u.name student_name,
+            t.title topic_title,
+            g.name group_name,
+            g.teacher_ids,
+            g.location,
+            g.defense_at
+        FROM
+            defense_info d
+            JOIN sys_user u ON u.id = d.student_id
+            JOIN student_assignment a ON a.student_id = d.student_id
+            JOIN topic_info t ON t.id = a.topic_id
+            JOIN defense_group g ON g.id = d.group_id
+        WHERE
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>d.student_id=#{scope.userId}</when>
+            <otherwise>
+                EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=d.student_id AND
+                                        scoped.teacher_id=#{scope.userId})
+            </otherwise>
+        </choose>
+        ORDER BY
+            g.defense_at,
+            d.id
+    </select>
+    <select id="groups" resultType="map">
+        SELECT
+            g.*
+        FROM
+            defense_group g
+        WHERE
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <otherwise>
+                EXISTS (SELECT 1 FROM defense_info d WHERE d.group_id=g.id AND
+                <choose>
+                    <when test='scope.admin'>1=1</when>
+                    <when test='scope.student'>d.student_id=#{scope.userId}</when>
+                    <otherwise>
+                        EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=d.student_id AND
+                                                scoped.teacher_id=#{scope.userId})
+                    </otherwise>
+                </choose>
+                )
+            </otherwise>
+        </choose>
+        ORDER BY
+            g.defense_at
+    </select>
+    <select id="scores" resultType="map">
+        SELECT
+            s.*,
+            u.name student_name,
+            t.name teacher_name
+        FROM
+            score_info s
+            JOIN sys_user u ON u.id = s.student_id
+            JOIN sys_user t ON t.id = s.teacher_id
+        WHERE
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>s.student_id=#{scope.userId}</when>
+            <otherwise>
+                EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=s.student_id AND
+                                        scoped.teacher_id=#{scope.userId})
+            </otherwise>
+        </choose>
+        <if test='scope.student'>AND s.published=1</if>
+        ORDER BY
+            s.id DESC
+    </select>
+    <select id="archives" resultType="map">
+        SELECT
+            a.*,
+            u.name student_name,
+            u.cohort,
+            t.title topic_title
+        FROM
+            archive_record a
+            JOIN sys_user u ON u.id = a.student_id
+            JOIN student_assignment sa ON sa.student_id = a.student_id
+            JOIN topic_info t ON t.id = sa.topic_id
+        WHERE
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>a.student_id=#{scope.userId}</when>
+            <otherwise>
+                EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=a.student_id AND
+                                        scoped.teacher_id=#{scope.userId})
+            </otherwise>
+        </choose>
+        ORDER BY
+            a.id DESC
+    </select>
+    <select id="reviews" resultType="map">
+        SELECT
+            r.*,
+            u.name reviewer_name,
+            s.name student_name
+        FROM
+            review_record r
+            JOIN sys_user u ON u.id = r.reviewer_id
+            LEFT JOIN sys_user s ON s.id = r.student_id
+        WHERE
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <otherwise>
+                r.reviewer_id=#{scope.userId} OR (r.student_id IS NOT NULL AND
+                <choose>
+                    <when test='scope.admin'>1=1</when>
+                    <when test='scope.student'>r.student_id=#{scope.userId}</when>
+                    <otherwise>
+                        EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=r.student_id AND
+                                                scoped.teacher_id=#{scope.userId})
+                    </otherwise>
+                </choose>
+                )
+            </otherwise>
+        </choose>
+        ORDER BY
+            r.id DESC
+    </select>
+    <select id="logs" resultType="map">
+        SELECT
+            l.*,
+            u.name user_name
+        FROM
+            sys_log l
+            LEFT JOIN sys_user u ON u.id = l.user_id
+        ORDER BY
+            l.id DESC
+        LIMIT
+            1000
+    </select>
+    <select id="notices" resultType="map">
+        SELECT
+            n.*,
+            u.name publisher_name
+        FROM
+            notice n
+            JOIN sys_user u ON u.id = n.publisher_id
+        ORDER BY
+            n.id DESC
+    </select>
+    <select id="pendingSelections" resultType="map">
+        SELECT
+            u.name
+        FROM
+            topic_selection s
+            JOIN topic_info t ON t.id = s.topic_id
+            JOIN sys_user u ON u.id = s.student_id
+        WHERE
+            s.status = '待审核'
+            AND t.teacher_id = #{teacherId}
+    </select>
+    <select id="materialsTask" resultType="map">
+        SELECT
+            m.*,
+            u.name student_name,
+            teacher.name teacher_name,
+            f.original_name
+        FROM
+            task_book m
+            JOIN sys_user u ON u.id = m.student_id
+            JOIN sys_user teacher ON teacher.id = m.teacher_id
+            JOIN file_record f ON f.id = m.file_id
+        WHERE
+            m.stage = #{stage} AND
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>m.student_id=#{scope.userId}</when>
+            <otherwise>
+                EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=m.student_id AND
+                                        scoped.teacher_id=#{scope.userId})
+            </otherwise>
+        </choose>
+        ORDER BY
+            m.student_id,
+            m.version DESC
+    </select>
+    <select id="materialsProposal" resultType="map">
+        SELECT
+            m.*,
+            u.name student_name,
+            teacher.name teacher_name,
+            f.original_name
+        FROM
+            proposal_report m
+            JOIN sys_user u ON u.id = m.student_id
+            JOIN sys_user teacher ON teacher.id = m.teacher_id
+            JOIN file_record f ON f.id = m.file_id
+        WHERE
+            m.stage = #{stage} AND
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>m.student_id=#{scope.userId}</when>
+            <otherwise>
+                EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=m.student_id AND
+                                        scoped.teacher_id=#{scope.userId})
+            </otherwise>
+        </choose>
+        ORDER BY
+            m.student_id,
+            m.version DESC
+    </select>
+    <select id="materialsMidterm" resultType="map">
+        SELECT
+            m.*,
+            u.name student_name,
+            teacher.name teacher_name,
+            f.original_name
+        FROM
+            midterm_check m
+            JOIN sys_user u ON u.id = m.student_id
+            JOIN sys_user teacher ON teacher.id = m.teacher_id
+            JOIN file_record f ON f.id = m.file_id
+        WHERE
+            m.stage = #{stage} AND
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>m.student_id=#{scope.userId}</when>
+            <otherwise>
+                EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=m.student_id AND
+                                        scoped.teacher_id=#{scope.userId})
+            </otherwise>
+        </choose>
+        ORDER BY
+            m.student_id,
+            m.version DESC
+    </select>
+    <select id="materialsThesis" resultType="map">
+        SELECT
+            m.*,
+            u.name student_name,
+            teacher.name teacher_name,
+            f.original_name
+        FROM
+            thesis_info m
+            JOIN sys_user u ON u.id = m.student_id
+            JOIN sys_user teacher ON teacher.id = m.teacher_id
+            JOIN file_record f ON f.id = m.file_id
+        WHERE
+            m.stage = #{stage} AND
+        <choose>
+            <when test='scope.admin'>1=1</when>
+            <when test='scope.student'>m.student_id=#{scope.userId}</when>
+            <otherwise>
+                EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=m.student_id AND
+                                        scoped.teacher_id=#{scope.userId})
+            </otherwise>
+        </choose>
+        ORDER BY
+            m.student_id,
+            m.version DESC
+    </select>
+    <select id="statistics" resultType="map">
+        SELECT
+            summary.name,
+            COUNT(*) student_count,
+            ROUND(AVG(summary.progress)) average_progress,
+            SUM(summary.archived) archive_count,
+            ROUND(AVG(summary.total_score), 2) average_score
+        FROM
+            (
+                SELECT
+                    COALESCE(
+        <choose>
+            <when test="groupBy == 'major'">m.name</when>
+            <when test="groupBy == 'class'">c.name</when>
+            <otherwise>teacher.name</otherwise>
+        </choose>
+        , '未分配') name,
+                    ROUND(
+                        (
+                            CASE
+                                WHEN a.topic_id IS NOT NULL THEN 1
+                                ELSE 0
+                            END + CASE
+                                WHEN EXISTS (
+                                    SELECT
+                                        1
+                                    FROM
+                                        task_book material
+                                    WHERE
+                                        material.student_id = u.id
+                                        AND material.stage = 'task'
+                                        AND material.status = '已通过'
+                                        AND NOT EXISTS (
+                                            SELECT
+                                                1
+                                            FROM
+                                                task_book newer
+                                            WHERE
+                                                newer.student_id = u.id
+                                                AND newer.stage = material.stage
+                                                AND newer.version &gt; material.version
+                                        )
+                                ) THEN 1
+                                ELSE 0
+                            END + CASE
+                                WHEN EXISTS (
+                                    SELECT
+                                        1
+                                    FROM
+                                        proposal_report material
+                                    WHERE
+                                        material.student_id = u.id
+                                        AND material.stage = 'proposal'
+                                        AND material.status = '已通过'
+                                        AND NOT EXISTS (
+                                            SELECT
+                                                1
+                                            FROM
+                                                proposal_report newer
+                                            WHERE
+                                                newer.student_id = u.id
+                                                AND newer.stage = material.stage
+                                                AND newer.version &gt; material.version
+                                        )
+                                ) THEN 1
+                                ELSE 0
+                            END + CASE
+                                WHEN EXISTS (
+                                    SELECT
+                                        1
+                                    FROM
+                                        midterm_check material
+                                    WHERE
+                                        material.student_id = u.id
+                                        AND material.stage = 'midterm'
+                                        AND material.status = '已通过'
+                                        AND NOT EXISTS (
+                                            SELECT
+                                                1
+                                            FROM
+                                                midterm_check newer
+                                            WHERE
+                                                newer.student_id = u.id
+                                                AND newer.stage = material.stage
+                                                AND newer.version &gt; material.version
+                                        )
+                                ) THEN 1
+                                ELSE 0
+                            END + CASE
+                                WHEN EXISTS (
+                                    SELECT
+                                        1
+                                    FROM
+                                        thesis_info material
+                                    WHERE
+                                        material.student_id = u.id
+                                        AND material.stage = 'draft'
+                                        AND material.status = '已通过'
+                                        AND NOT EXISTS (
+                                            SELECT
+                                                1
+                                            FROM
+                                                thesis_info newer
+                                            WHERE
+                                                newer.student_id = u.id
+                                                AND newer.stage = material.stage
+                                                AND newer.version &gt; material.version
+                                        )
+                                ) THEN 1
+                                ELSE 0
+                            END + CASE
+                                WHEN EXISTS (
+                                    SELECT
+                                        1
+                                    FROM
+                                        thesis_info material
+                                    WHERE
+                                        material.student_id = u.id
+                                        AND material.stage = 'final'
+                                        AND material.status = '已通过'
+                                        AND NOT EXISTS (
+                                            SELECT
+                                                1
+                                            FROM
+                                                thesis_info newer
+                                            WHERE
+                                                newer.student_id = u.id
+                                                AND newer.stage = material.stage
+                                                AND newer.version &gt; material.version
+                                        )
+                                ) THEN 1
+                                ELSE 0
+                            END + CASE
+                                WHEN EXISTS (
+                                    SELECT
+                                        1
+                                    FROM
+                                        defense_info d
+                                    WHERE
+                                        d.student_id = u.id
+                                        AND d.status = '已完成'
+                                ) THEN 1
+                                ELSE 0
+                            END + CASE
+                                WHEN score.published = 1 THEN 1
+                                ELSE 0
+                            END + CASE
+                                WHEN archive.id IS NOT NULL THEN 1
+                                ELSE 0
+                            END
+                        ) * 100.0 / 9
+                    ) progress,
+                    CASE
+                        WHEN archive.id IS NOT NULL THEN 1
+                        ELSE 0
+                    END archived,
+        <choose>
+            <when test="scope.student">CASE WHEN score.published=1 THEN score.total_score ELSE NULL END</when>
+            <otherwise>score.total_score</otherwise>
+        </choose>
+         total_score
+                FROM
+                    sys_user u
+                    JOIN sys_user_role ur ON ur.user_id = u.id
+                    JOIN sys_role r ON r.id = ur.role_id
+                    AND r.code = 'STUDENT'
+                    LEFT JOIN major m ON m.id = u.major_id
+                    LEFT JOIN school_class c ON c.id = u.class_id
+                    LEFT JOIN student_assignment a ON a.student_id = u.id
+                    LEFT JOIN sys_user teacher ON teacher.id = a.teacher_id
+                    LEFT JOIN score_info score ON score.student_id = u.id
+                    LEFT JOIN archive_record archive ON archive.student_id = u.id
+                WHERE
+        <choose>
+            <when test="scope.admin">1=1</when>
+            <when test="scope.student">u.id=#{scope.userId}</when>
+            <otherwise>a.teacher_id=#{scope.userId}</otherwise>
+        </choose>
+        <if test="filters.majorId != null and filters.majorId != ''">AND u.major_id=#{filters.majorId}</if>
+        <if test="filters.classId != null and filters.classId != ''">AND u.class_id=#{filters.classId}</if>
+        <if test="filters.teacherId != null and filters.teacherId != ''">
+            AND a.teacher_id=#{filters.teacherId}
+        </if>
+        <if test="filters.cohort != null and filters.cohort != ''">AND u.cohort=#{filters.cohort}</if>
+            ) summary
+        GROUP BY
+            summary.name
+        ORDER BY
+            summary.name
+    </select>
+</mapper>
