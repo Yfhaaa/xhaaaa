@@ -8,9 +8,9 @@
 ```text
 你是一名运维工程师，请在【当前这台机器】上部署开源项目“毕业设计全过程管理系统（GDPM）”，并确保可以通过浏览器访问。
 
-项目仓库：https://github.com/Yfhaaa/xhaaaa
-部署文档：https://github.com/Yfhaaa/xhaaaa/blob/main/DEPLOY.md
-（若无法访问 github.com，可读取原始文件：https://raw.githubusercontent.com/Yfhaaa/xhaaaa/main/DEPLOY.md）
+项目仓库：https://github.com/winfaaa/xhaaaa
+部署文档：https://github.com/winfaaa/xhaaaa/blob/main/DEPLOY.md
+（若无法访问 github.com，可读取原始文件：https://raw.githubusercontent.com/winfaaa/xhaaaa/main/DEPLOY.md）
 
 要求：
 1. 先完整阅读 DEPLOY.md，严格按其中“方式一：下载发布包直接运行”部署；只有发布包下载失败时，才改用“方式二：从源码构建”。
@@ -36,7 +36,7 @@
 ## 只需要命令清单时
 
 ```text
-请阅读 https://github.com/Yfhaaa/xhaaaa/blob/main/DEPLOY.md ，
+请阅读 https://github.com/winfaaa/xhaaaa/blob/main/DEPLOY.md ，
 按“方式一”给出在【Ubuntu 22.04 / Windows 11（改成你的系统）】上部署本系统的完整命令清单，
 包括安装 Java、下载 jar、后台运行和验证命令，每条命令附一句中文说明。
 ```

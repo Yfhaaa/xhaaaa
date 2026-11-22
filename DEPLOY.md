@@ -36,7 +36,7 @@ Linux / macOS：
 
 ```bash
 mkdir -p ~/gdpm && cd ~/gdpm
-curl -L -o gdpm-system.jar https://github.com/Yfhaaa/xhaaaa/releases/latest/download/gdpm-system.jar
+curl -L -o gdpm-system.jar https://github.com/winfaaa/xhaaaa/releases/latest/download/gdpm-system.jar
 java -jar gdpm-system.jar
 ```
 
@@ -44,7 +44,7 @@ Windows PowerShell：
 
 ```powershell
 New-Item -ItemType Directory -Force C:\gdpm | Out-Null; Set-Location C:\gdpm
-Invoke-WebRequest https://github.com/Yfhaaa/xhaaaa/releases/latest/download/gdpm-system.jar -OutFile gdpm-system.jar
+Invoke-WebRequest https://github.com/winfaaa/xhaaaa/releases/latest/download/gdpm-system.jar -OutFile gdpm-system.jar
 java -jar gdpm-system.jar
 ```
 
@@ -73,7 +73,7 @@ java -jar gdpm-system.jar
 需要 JDK 11+ 与 Node.js 18+；Maven 可不装（脚本自动使用项目自带的 `backend/mvnw`）。
 
 ```bash
-git clone https://github.com/Yfhaaa/xhaaaa.git gdpm && cd gdpm
+git clone https://github.com/winfaaa/xhaaaa.git gdpm && cd gdpm
 bash scripts/build-release.sh --skip-tests        # Windows：powershell -ExecutionPolicy Bypass -File scripts\build-release.ps1 -SkipTests
 java -jar release/gdpm-system.jar
 ```
@@ -105,7 +105,7 @@ mysql -uroot -p --default-character-set=utf8mb4 < sql/init.sql
 ```
 
 > 只下载了 jar 的部署方式，可单独下载该文件：
-> `curl -L -o init.sql https://raw.githubusercontent.com/Yfhaaa/xhaaaa/main/sql/init.sql`
+> `curl -L -o init.sql https://raw.githubusercontent.com/winfaaa/xhaaaa/main/sql/init.sql`
 >
 > 建议为系统单独建账号，而不是使用 root：
 > ```sql

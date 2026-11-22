@@ -17,7 +17,7 @@
 只需 Java 11+，下载发布包后一条命令启动（前端已内置，默认使用内置数据库）：
 
 ```bash
-curl -L -o gdpm-system.jar https://github.com/Yfhaaa/xhaaaa/releases/latest/download/gdpm-system.jar
+curl -L -o gdpm-system.jar https://github.com/winfaaa/xhaaaa/releases/latest/download/gdpm-system.jar
 java -jar gdpm-system.jar          # 浏览器访问 http://localhost:8080 ，账号 admin / 123456
 ```
 
