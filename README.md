@@ -12,6 +12,19 @@
 
 更多截图见 [docs/screenshots](docs/screenshots/README.md)。
 
+## 快速部署
+
+只需 Java 11+，下载发布包后一条命令启动（前端已内置，默认使用内置数据库）：
+
+```bash
+curl -L -o gdpm-system.jar https://github.com/Yfhaaa/xhaaaa/releases/latest/download/gdpm-system.jar
+java -jar gdpm-system.jar          # 浏览器访问 http://localhost:8080 ，账号 admin / 123456
+```
+
+- 完整部署方案（MySQL、Linux 开机自启、Nginx、备份升级、常见问题）：[DEPLOY.md](DEPLOY.md)
+- 让 AI 助手自动部署：[docs/AI部署提示词.md](docs/AI部署提示词.md)
+- 从源码打包：`bash scripts/build-release.sh`（Windows：`scriptsuild-release.ps1`）
+
 ## 运行与构建
 
 需要 JDK 11+、Node.js 18+、Maven 3.6.3+（或随仓库提供的 Maven Wrapper）。默认使用持久化 H2；可切换到 MySQL 8。

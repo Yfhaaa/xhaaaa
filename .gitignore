@@ -17,3 +17,5 @@ backend/.mvn/wrapper/*.part
 
 __pycache__/
 *.py[cod]
+backend/src/main/resources/static/
+release/
