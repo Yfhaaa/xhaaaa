@@ -1,14 +1,19 @@
 package edu.gengdan.gdpm.auth;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import edu.gengdan.gdpm.common.*;
+import edu.gengdan.gdpm.common.ApiException;
 import edu.gengdan.gdpm.dto.DataScope;
-import edu.gengdan.gdpm.entity.*;
-import edu.gengdan.gdpm.mapper.*;
+import edu.gengdan.gdpm.entity.StudentAssignment;
+import edu.gengdan.gdpm.entity.WorkflowStep;
+import edu.gengdan.gdpm.mapper.ReportMapper;
+import edu.gengdan.gdpm.mapper.StudentAssignmentMapper;
+import edu.gengdan.gdpm.mapper.UserMapper;
+import edu.gengdan.gdpm.mapper.WorkflowStepMapper;
+import edu.gengdan.gdpm.vo.UserVO;
 import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.*;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,17 +92,16 @@ public class Auth {
         throw new ApiException(403, "不能访问其他学生或其他教师指导的数据");
     }
 
-    /** 返回当前身份及角色权限。 */
-    public Map<String, Object> me() {
-        Map<String, Object> result = EntityViews.view(users.selectById(uid()));
-        result.put("roles", reports.roles(uid()));
-        result.put("permissions", reports.permissions(uid()));
-        return result;
+    /** 已登录用户读取本人脱敏资料、角色与实时权限。 */
+    public UserVO me() {
+        return new UserVO(users.selectById(uid()), reports.roles(uid()), reports.permissions(uid()));
     }
 
     /** 检查业务节点截止时间。 */
     public void deadline(String stage) {
-        WorkflowStep step = steps.selectOne(new LambdaQueryWrapper<WorkflowStep>().eq(WorkflowStep::getCode, stage));
+        WorkflowStep step = steps.selectOne(
+            new LambdaQueryWrapper<WorkflowStep>().eq(WorkflowStep::getCode, stage)
+        );
         if (step == null) {
             throw new ApiException(400, "流程节点不存在");
         }
@@ -110,7 +114,9 @@ public class Auth {
     /** 计算令牌的单向摘要。 */
     public static String hash(String token) {
         try {
-            byte[] bytes = MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8));
+            byte[] bytes = MessageDigest.getInstance("SHA-256").digest(
+                token.getBytes(StandardCharsets.UTF_8)
+            );
             StringBuilder result = new StringBuilder();
             for (byte value : bytes) {
                 result.append(String.format("%02x", value & 255));

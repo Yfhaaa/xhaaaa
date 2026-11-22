@@ -1,18 +1,22 @@
 package edu.gengdan.gdpm.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.gengdan.gdpm.dto.ReviewRequest;
+import edu.gengdan.gdpm.dto.TopicSaveRequest;
 import edu.gengdan.gdpm.entity.TopicInfo;
-import java.util.*;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
+import edu.gengdan.gdpm.vo.IdVO;
+import edu.gengdan.gdpm.vo.MessageVO;
+import java.util.List;
+import java.util.Map;
 
-/** TopicService 模块业务契约。 */
+/** 持 topic:read 权限的用户查询本人角色可见课题。 教师在申报截止前创建待审核课题；仅本人已退回课题可修改重提。 管理员仅审核待审核课题，更新为已通过或已退回并保留意见。 */
 public interface TopicService extends IService<TopicInfo> {
-    /** 查询当前角色可见的课题。 */
-    Object topics();
-    /** 保存课题并校验退回重提状态。 */
-    Object save(Long topicId, Map<String, Object> body);
-    /** 审核待审核课题并保存审核留痕。 */
-    Object reviewTopic(long topicId, Map<String, Object> body);
+    /** 持 topic:read 权限的用户查询本人角色可见课题。 */
+    List<Map<String, Object>> topics();
+
+    /** 教师在申报截止前创建待审核课题；仅本人已退回课题可修改重提。 */
+    IdVO save(Long topicId, TopicSaveRequest body);
+
+    /** 管理员仅审核待审核课题，更新为已通过或已退回并保留意见。 */
+    MessageVO reviewTopic(long topicId, ReviewRequest body);
 }

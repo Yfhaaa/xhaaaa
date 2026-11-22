@@ -4,7 +4,8 @@ defineProps({ status: String });
 <template>
   <el-tag
     :type="
-      { 已通过: 'success', 已完成: 'success', 已退回: 'danger', 待审核: 'warning', 待提交: 'info' }[status] || 'info'
+      { 已通过: 'success', 已完成: 'success', 已退回: 'danger', 待审核: 'warning', 待提交: 'info' }[status] ||
+      'info'
     "
     effect="light"
     round

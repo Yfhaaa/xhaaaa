@@ -1,12 +1,20 @@
 package edu.gengdan.gdpm.auth;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import edu.gengdan.gdpm.entity.*;
-import edu.gengdan.gdpm.mapper.*;
+import edu.gengdan.gdpm.entity.SysSession;
+import edu.gengdan.gdpm.entity.User;
+import edu.gengdan.gdpm.mapper.ReportMapper;
+import edu.gengdan.gdpm.mapper.SysSessionMapper;
+import edu.gengdan.gdpm.mapper.UserMapper;
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import org.apache.shiro.authc.*;
-import org.apache.shiro.authz.*;
+import org.apache.shiro.authc.AuthenticationInfo;
+import org.apache.shiro.authc.AuthenticationToken;
+import org.apache.shiro.authc.DisabledAccountException;
+import org.apache.shiro.authc.IncorrectCredentialsException;
+import org.apache.shiro.authc.SimpleAuthenticationInfo;
+import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.springframework.stereotype.Component;
@@ -19,6 +27,7 @@ public class TokenRealm extends AuthorizingRealm {
     private final UserMapper users;
     private final ReportMapper reports;
 
+    /** 装配已配置的依赖或已验证的数据，供所属业务使用。 */
     public TokenRealm(SysSessionMapper sessions, UserMapper users, ReportMapper reports) {
         this.sessions = sessions;
         this.users = users;

@@ -1,19 +1,46 @@
 package edu.gengdan.gdpm.common;
 
+import java.util.Comparator;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authz.AuthorizationException;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /** 统一业务、鉴权、参数与持久化错误响应。 */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /** 请求 DTO 约束失败返回原有 400 状态及字段对应的中文提示。 */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Result<Void>> invalidRequest(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+            .sorted(Comparator.comparing(FieldError::getField))
+            .map(FieldError::getDefaultMessage)
+            .findFirst().orElse("请求参数格式不正确");
+        return error(400, message);
+    }
+
+    /** 直接服务调用和条件分组校验失败时复用请求 DTO 的中文错误。 */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Result<Void>> invalidServiceRequest(ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+            .sorted(Comparator.comparing(value -> value.getPropertyPath().toString()))
+            .map(ConstraintViolation::getMessage)
+            .findFirst().orElse("请求参数格式不正确");
+        return error(400, message);
+    }
 
     /** 构造统一错误响应。 */
     private ResponseEntity<Result<Void>> error(int status, String message) {
@@ -42,12 +69,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
         IllegalArgumentException.class,
         HttpMessageNotReadableException.class,
-        MethodArgumentNotValidException.class,
         MethodArgumentTypeMismatchException.class,
-        org.springframework.validation.BindException.class,
-        org.springframework.web.bind.MissingServletRequestParameterException.class,
+        BindException.class,
+        MissingServletRequestParameterException.class,
     })
     public ResponseEntity<Result<Void>> bad(Exception e) {
+        for (Throwable cause = e.getCause(); cause != null; cause = cause.getCause()) {
+            if (cause instanceof ApiException) {
+                return error(400, cause.getMessage());
+            }
+        }
         return error(400, "请求参数格式不正确");
     }
 

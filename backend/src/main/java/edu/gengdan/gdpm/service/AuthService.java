@@ -1,18 +1,20 @@
 package edu.gengdan.gdpm.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.gengdan.gdpm.dto.LoginRequest;
 import edu.gengdan.gdpm.entity.SysSession;
-import java.util.*;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
+import edu.gengdan.gdpm.vo.LoginVO;
+import edu.gengdan.gdpm.vo.MessageVO;
+import edu.gengdan.gdpm.vo.UserVO;
 
-/** AuthService 模块业务契约。 */
+/** 匿名校验启用账号与密码，签发十二小时令牌，仅持久化摘要。 已登录用户读取本人脱敏资料、角色与实时权限。 已登录用户注销当前会话，原令牌立即失效。 */
 public interface AuthService extends IService<SysSession> {
-    /** 验证账号后签发限时随机令牌。 */
-    Object login(edu.gengdan.gdpm.dto.LoginRequest request);
-    /** 返回当前身份及角色权限。 */
-    Object me();
-    /** 注销当前令牌。 */
-    Object logout(String bearer);
+    /** 匿名校验启用账号与密码，签发十二小时令牌，仅持久化摘要。 */
+    LoginVO login(LoginRequest request);
+
+    /** 已登录用户读取本人脱敏资料、角色与实时权限。 */
+    UserVO me();
+
+    /** 已登录用户注销当前会话，原令牌立即失效。 */
+    MessageVO logout(String bearer);
 }

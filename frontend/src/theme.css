@@ -1,0 +1,128 @@
+:root {
+  --gdpm-green: #123e34;
+  --gdpm-gold: #d8be7b;
+  --gdpm-surface: #fff;
+}
+.main-shell,
+.page,
+.panel,
+.data-table {
+  min-width: 0;
+}
+.el-pagination {
+  justify-content: flex-end;
+  margin-top: 18px;
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.data-table > .toolbar {
+  margin: 12px 0;
+}
+.data-table .el-input {
+  max-width: 320px;
+}
+.el-dialog {
+  max-width: calc(100vw - 40px);
+}
+.timeline-card {
+  padding: 16px;
+  background: #f8faf9;
+  border: 1px solid #e6ede8;
+  border-radius: 8px;
+}
+.version-row {
+  padding: 10px 0;
+  border-top: 1px solid #e6ede8;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.dossier-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+  gap: 22px;
+}
+.board {
+  background: #071e20;
+  color: #d6ece7;
+  min-height: 100vh;
+  padding: 28px;
+}
+.board header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+.board h1 {
+  margin: 0 0 7px;
+  font-weight: 500;
+}
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.board-card {
+  padding: 18px;
+  border: 1px solid #28544d;
+  border-radius: 10px;
+  background: #0c2a2a;
+  min-width: 0;
+}
+.board-card h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #c1ddd2;
+}
+.board .chart {
+  height: 300px;
+}
+.warning-window {
+  height: 300px;
+  overflow: hidden;
+}
+.warning-list {
+  animation: warning-scroll 25s linear infinite;
+}
+.warning-list p {
+  border-bottom: 1px solid #28544d;
+  padding: 12px;
+  font-size: 13px;
+}
+@keyframes warning-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+@media (max-width: 1366px) {
+  .board-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1100px) {
+  .page {
+    padding: 22px 20px;
+  }
+  .panel {
+    padding: 18px;
+  }
+  .dossier-grid {
+    grid-template-columns: 1fr;
+  }
+  .page-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+.statistics-filters {
+  flex-wrap: wrap;
+}
+.statistics-filters .el-select {
+  width: 180px;
+}

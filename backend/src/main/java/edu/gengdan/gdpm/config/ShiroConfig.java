@@ -1,15 +1,20 @@
 package edu.gengdan.gdpm.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.gengdan.gdpm.auth.*;
-import java.util.*;
+import edu.gengdan.gdpm.auth.TokenFilter;
+import edu.gengdan.gdpm.auth.TokenRealm;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import javax.servlet.Filter;
-import org.apache.shiro.mgt.*;
+import org.apache.shiro.mgt.DefaultSessionStorageEvaluator;
+import org.apache.shiro.mgt.DefaultSubjectDAO;
+import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /** 注册 Shiro Web 过滤链、无状态主题与 Spring 方法注解鉴权。 */
 @Configuration
@@ -17,7 +22,7 @@ public class ShiroConfig {
 
     /** 创建禁用会话存储的安全管理器。 */
     @Bean
-    public org.apache.shiro.mgt.SecurityManager securityManager(TokenRealm realm) {
+    public SecurityManager securityManager(TokenRealm realm) {
         DefaultWebSecurityManager manager = new DefaultWebSecurityManager(realm);
         manager.setRememberMeManager(null);
         DefaultSubjectDAO dao = new DefaultSubjectDAO();
@@ -30,7 +35,10 @@ public class ShiroConfig {
 
     /** 配置匿名端点和受保护端点的过滤链。 */
     @Bean
-    public ShiroFilterFactoryBean shiroFilter(org.apache.shiro.mgt.SecurityManager securityManager, ObjectMapper json) {
+    public ShiroFilterFactoryBean shiroFilter(
+        SecurityManager securityManager,
+        ObjectMapper json
+    ) {
         ShiroFilterFactoryBean factory = new ShiroFilterFactoryBean();
         factory.setSecurityManager(securityManager);
         Map<String, Filter> filters = new LinkedHashMap<>();
@@ -49,7 +57,9 @@ public class ShiroConfig {
     /** 将 Shiro 主过滤器注册到 Web 容器。 */
     @Bean
     public FilterRegistrationBean<Filter> shiroRegistration(ShiroFilterFactoryBean factory) throws Exception {
-        FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>((Filter) factory.getObject());
+        FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>(
+            (Filter) factory.getObject()
+        );
         registration.setName("shiroFilter");
         registration.addUrlPatterns("/*");
         registration.setOrder(-100);
@@ -59,7 +69,7 @@ public class ShiroConfig {
     /** 启用角色与权限注解拦截。 */
     @Bean
     public AuthorizationAttributeSourceAdvisor authorizationAdvisor(
-        org.apache.shiro.mgt.SecurityManager securityManager
+        SecurityManager securityManager
     ) {
         AuthorizationAttributeSourceAdvisor advisor = new AuthorizationAttributeSourceAdvisor();
         advisor.setSecurityManager(securityManager);

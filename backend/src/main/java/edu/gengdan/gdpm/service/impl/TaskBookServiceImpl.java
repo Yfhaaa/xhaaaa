@@ -5,9 +5,10 @@ import edu.gengdan.gdpm.common.ApiException;
 import edu.gengdan.gdpm.entity.TaskBook;
 import edu.gengdan.gdpm.mapper.TaskBookMapper;
 import edu.gengdan.gdpm.service.TaskBookService;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
-/** TaskBook 的类型化阶段服务。 */
+/** 持 material:read 权限查询范围内各阶段全部历史版本。 */
 @Service
 public class TaskBookServiceImpl
     extends AbstractMaterialStageService<TaskBookMapper, TaskBook>
@@ -29,6 +30,6 @@ public class TaskBookServiceImpl
 
     /** 拒绝与当前模块不匹配的材料阶段。 */
     protected void validateStage(String stage) {
-        ApiException.require(java.util.List.of("task").contains(stage), "材料阶段不存在");
+        ApiException.require(List.of("task").contains(stage), "材料阶段不存在");
     }
 }

@@ -28,10 +28,8 @@ try {
    await page.getByPlaceholder('请输入登录密码').fill('123456');
    await page.getByRole('button',{name:'进入系统 →'}).click();
    await page.waitForURL(base+'/');
-   await page.goto(base+(who==='teacher1'?'/topics':'/materials'));
+   await page.goto(base+(who==='teacher1'?'/selections':'/materials/midterm'));
    await page.waitForLoadState('networkidle');
-   if(who==='teacher1')await page.getByRole('tab',{name:'双选申请'}).click();
-   else await page.getByRole('tab',{name:'中期检查'}).click();
    await page.waitForTimeout(300);
    const expected=who==='teacher1'?['确认','退回']:['下载','详情','通过','退回'];
    const row=page.locator('.el-table__row').filter({hasText:who==='teacher1'?'刘冉':'王悦'});

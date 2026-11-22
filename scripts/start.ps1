@@ -56,7 +56,7 @@ try {
     $runtime.frontendPort = $frontendPort
     $backend = Start-Process -FilePath $script:java -WorkingDirectory (Join-Path $projectRoot 'backend') -WindowStyle Hidden `
         -ArgumentList @('-Dfile.encoding=UTF-8', '-Djava.io.tmpdir=../run/tmp', '-jar',
-            'target/gdpm-system.jar', "--server.port=$backendPort") -PassThru `
+            'target/gdpm-system-v3.jar', "--server.port=$backendPort") -PassThru `
         -RedirectStandardOutput (Join-Path $runDir 'backend.out.log') `
         -RedirectStandardError (Join-Path $runDir 'backend.err.log')
     Record-Process $backend 'backend'

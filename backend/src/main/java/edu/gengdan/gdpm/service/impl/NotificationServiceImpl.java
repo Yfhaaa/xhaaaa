@@ -1,52 +1,50 @@
 package edu.gengdan.gdpm.service.impl;
 
-import static edu.gengdan.gdpm.common.ApiException.require;
-import static edu.gengdan.gdpm.common.Values.*;
-
-import edu.gengdan.gdpm.common.*;
-import edu.gengdan.gdpm.entity.*;
-import edu.gengdan.gdpm.mapper.*;
-import edu.gengdan.gdpm.service.*;
-import java.time.LocalDateTime;
-import java.util.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import edu.gengdan.gdpm.common.OperLog;
+import edu.gengdan.gdpm.dto.NoticeSaveRequest;
+import edu.gengdan.gdpm.entity.Notice;
+import edu.gengdan.gdpm.mapper.NoticeMapper;
+import edu.gengdan.gdpm.service.NotificationService;
+import edu.gengdan.gdpm.vo.IdVO;
+import edu.gengdan.gdpm.vo.MessageVO;
+import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** NotificationService 模块实现，校验权限与业务状态后持久化实体。 */
+/** 所有登录用户查询通知公告。 管理员发布标题和正文均完整的通知，成功后记录操作审计。 管理员删除通知，成功后记录操作审计。 */
 @Service
-public class NotificationServiceImpl extends DomainSupport<NoticeMapper, Notice> implements NotificationService {
+public class NotificationServiceImpl
+    extends DomainSupport<NoticeMapper, Notice>
+    implements NotificationService
+{
 
-    /** 查询通知列表。 */
-    public Object notices() {
+    /** 所有登录用户查询通知公告。 */
+    public List<Map<String, Object>> notices() {
         auth.uid();
         return reports.notices();
     }
 
-    /** 发布通知。 */
+    /** 管理员发布标题和正文均完整的通知，成功后记录操作审计。 */
     @OperLog("发布通知")
     @Transactional
-    public Object notice(Map<String, Object> body) {
+    public IdVO notice(NoticeSaveRequest body) {
+        validate(body);
         admin();
-        Notice notice = entity(
-            Notice.class,
-            "title",
-            Params.text(body, "title", 200),
-            "content",
-            Params.text(body, "content", 10000),
-            "publisher_id",
-            auth.uid()
-        );
+        Notice notice = new Notice();
+        notice.setTitle(body.getTitle());
+        notice.setContent(body.getContent());
+        notice.setPublisherId(auth.uid());
         save(notice);
-        return Map.of("id", notice.getId());
+        return new IdVO(notice.getId());
     }
 
-    /** 删除通知。 */
+    /** 管理员删除通知，成功后记录操作审计。 */
     @OperLog("删除通知")
     @Transactional
-    public Object removeNotice(long noticeId) {
+    public MessageVO removeNotice(long noticeId) {
         admin();
         removeById(noticeId);
-        return Map.of("message", "已删除");
+        return new MessageVO("已删除");
     }
 }

@@ -1,6 +1,10 @@
 package edu.gengdan.gdpm.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /** score_info 表实体。 */
 @TableName("score_info")
@@ -12,120 +16,154 @@ public class ScoreInfo {
 
     /** 学生编号。 */
     private Long studentId;
+
     /** 指导成绩。 */
-    private java.math.BigDecimal guidanceScore;
+    private BigDecimal guidanceScore;
+
     /** 评阅成绩。 */
-    private java.math.BigDecimal reviewScore;
+    private BigDecimal reviewScore;
+
     /** 答辩成绩。 */
-    private java.math.BigDecimal defenseScore;
+    private BigDecimal defenseScore;
+
     /** 指导成绩权重。 */
-    private java.math.BigDecimal guidanceWeight;
+    private BigDecimal guidanceWeight;
+
     /** 评阅成绩权重。 */
-    private java.math.BigDecimal reviewWeight;
+    private BigDecimal reviewWeight;
+
     /** 答辩成绩权重。 */
-    private java.math.BigDecimal defenseWeight;
+    private BigDecimal defenseWeight;
+
     /** 综合成绩。 */
-    private java.math.BigDecimal totalScore;
+    private BigDecimal totalScore;
+
     /** 成绩发布标记。 */
     private Integer published;
+
     /** 指导教师编号。 */
     private Long teacherId;
-    /** 更新时间。 */
-    private java.time.LocalDateTime updatedAt;
 
+    /** 更新时间。 */
+    private LocalDateTime updatedAt;
+
+    /** 读取编号。 */
     public Long getId() {
         return id;
     }
 
+    /** 设置编号。 */
     public void setId(Long id) {
         this.id = id;
     }
 
+    /** 读取学生编号。 */
     public Long getStudentId() {
         return studentId;
     }
 
+    /** 设置学生编号。 */
     public void setStudentId(Long studentId) {
         this.studentId = studentId;
     }
 
-    public java.math.BigDecimal getGuidanceScore() {
+    /** 读取指导分。 */
+    public BigDecimal getGuidanceScore() {
         return guidanceScore;
     }
 
-    public void setGuidanceScore(java.math.BigDecimal guidanceScore) {
+    /** 设置指导分。 */
+    public void setGuidanceScore(BigDecimal guidanceScore) {
         this.guidanceScore = guidanceScore;
     }
 
-    public java.math.BigDecimal getReviewScore() {
+    /** 读取评阅分。 */
+    public BigDecimal getReviewScore() {
         return reviewScore;
     }
 
-    public void setReviewScore(java.math.BigDecimal reviewScore) {
+    /** 设置评阅分。 */
+    public void setReviewScore(BigDecimal reviewScore) {
         this.reviewScore = reviewScore;
     }
 
-    public java.math.BigDecimal getDefenseScore() {
+    /** 读取答辩分。 */
+    public BigDecimal getDefenseScore() {
         return defenseScore;
     }
 
-    public void setDefenseScore(java.math.BigDecimal defenseScore) {
+    /** 设置答辩分。 */
+    public void setDefenseScore(BigDecimal defenseScore) {
         this.defenseScore = defenseScore;
     }
 
-    public java.math.BigDecimal getGuidanceWeight() {
+    /** 读取指导分权重。 */
+    public BigDecimal getGuidanceWeight() {
         return guidanceWeight;
     }
 
-    public void setGuidanceWeight(java.math.BigDecimal guidanceWeight) {
+    /** 设置指导分权重。 */
+    public void setGuidanceWeight(BigDecimal guidanceWeight) {
         this.guidanceWeight = guidanceWeight;
     }
 
-    public java.math.BigDecimal getReviewWeight() {
+    /** 读取评阅分权重。 */
+    public BigDecimal getReviewWeight() {
         return reviewWeight;
     }
 
-    public void setReviewWeight(java.math.BigDecimal reviewWeight) {
+    /** 设置评阅分权重。 */
+    public void setReviewWeight(BigDecimal reviewWeight) {
         this.reviewWeight = reviewWeight;
     }
 
-    public java.math.BigDecimal getDefenseWeight() {
+    /** 读取答辩分权重。 */
+    public BigDecimal getDefenseWeight() {
         return defenseWeight;
     }
 
-    public void setDefenseWeight(java.math.BigDecimal defenseWeight) {
+    /** 设置答辩分权重。 */
+    public void setDefenseWeight(BigDecimal defenseWeight) {
         this.defenseWeight = defenseWeight;
     }
 
-    public java.math.BigDecimal getTotalScore() {
+    /** 读取总成绩。 */
+    public BigDecimal getTotalScore() {
         return totalScore;
     }
 
-    public void setTotalScore(java.math.BigDecimal totalScore) {
+    /** 设置总成绩。 */
+    public void setTotalScore(BigDecimal totalScore) {
         this.totalScore = totalScore;
     }
 
+    /** 读取成绩发布标记。 */
     public Integer getPublished() {
         return published;
     }
 
+    /** 设置成绩发布标记。 */
     public void setPublished(Integer published) {
         this.published = published;
     }
 
+    /** 读取指导教师编号。 */
     public Long getTeacherId() {
         return teacherId;
     }
 
+    /** 设置指导教师编号。 */
     public void setTeacherId(Long teacherId) {
         this.teacherId = teacherId;
     }
 
-    public java.time.LocalDateTime getUpdatedAt() {
+    /** 读取更新时间。 */
+    public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(java.time.LocalDateTime updatedAt) {
+    /** 设置更新时间。 */
+    public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
 }

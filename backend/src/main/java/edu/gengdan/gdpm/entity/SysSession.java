@@ -1,6 +1,9 @@
 package edu.gengdan.gdpm.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import java.time.LocalDateTime;
 
 /** sys_session 表实体。 */
 @TableName("sys_session")
@@ -12,30 +15,37 @@ public class SysSession {
 
     /** 用户编号。 */
     private Long userId;
-    /** 过期时间。 */
-    private java.time.LocalDateTime expiresAt;
 
+    /** 过期时间。 */
+    private LocalDateTime expiresAt;
+
+    /** 读取令牌摘要。 */
     public String getTokenHash() {
         return tokenHash;
     }
 
+    /** 设置令牌摘要。 */
     public void setTokenHash(String tokenHash) {
         this.tokenHash = tokenHash;
     }
 
+    /** 读取用户编号。 */
     public Long getUserId() {
         return userId;
     }
 
+    /** 设置用户编号。 */
     public void setUserId(Long userId) {
         this.userId = userId;
     }
 
-    public java.time.LocalDateTime getExpiresAt() {
+    /** 读取会话过期时间。 */
+    public LocalDateTime getExpiresAt() {
         return expiresAt;
     }
 
-    public void setExpiresAt(java.time.LocalDateTime expiresAt) {
+    /** 设置会话过期时间。 */
+    public void setExpiresAt(LocalDateTime expiresAt) {
         this.expiresAt = expiresAt;
     }
 }

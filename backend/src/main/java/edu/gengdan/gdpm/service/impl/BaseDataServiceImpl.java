@@ -1,37 +1,41 @@
 package edu.gengdan.gdpm.service.impl;
 
 import static edu.gengdan.gdpm.common.ApiException.require;
-import static edu.gengdan.gdpm.common.Values.*;
 
-import edu.gengdan.gdpm.common.*;
-import edu.gengdan.gdpm.entity.*;
-import edu.gengdan.gdpm.mapper.*;
-import edu.gengdan.gdpm.service.*;
-import java.time.LocalDateTime;
-import java.util.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import edu.gengdan.gdpm.common.EntityViews;
+import edu.gengdan.gdpm.common.OperLog;
+import edu.gengdan.gdpm.dto.BaseDataSaveRequest;
+import edu.gengdan.gdpm.entity.Cohort;
+import edu.gengdan.gdpm.entity.Major;
+import edu.gengdan.gdpm.entity.SchoolClass;
+import edu.gengdan.gdpm.entity.User;
+import edu.gengdan.gdpm.mapper.MajorMapper;
+import edu.gengdan.gdpm.service.BaseDataService;
+import edu.gengdan.gdpm.vo.IdVO;
+import edu.gengdan.gdpm.vo.MessageVO;
+import edu.gengdan.gdpm.vo.ReferenceVO;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** BaseDataService 模块实现，校验权限与业务状态后持久化实体。 */
+/** 已登录用户获取专业、班级和届次，教师列表仅管理员可见。 管理员维护专业、班级和届次，班级专业变更须与已有用户一致，届次改名同步用户。 管理员删除未被引用的基础数据，引用冲突由持久化约束拦截。 */
 @Service
 public class BaseDataServiceImpl extends DomainSupport<MajorMapper, Major> implements BaseDataService {
 
-    /** 查询页面所需基础下拉数据。 */
-    public Object reference() {
+    /** 已登录用户获取专业、班级和届次，教师列表仅管理员可见。 */
+    public ReferenceVO reference() {
         auth.uid();
         List<Map<String, Object>> classViews = new ArrayList<>();
         for (SchoolClass row : classes.selectList(query(SchoolClass.class).orderByAsc(SchoolClass::getId))) {
             classViews.add(EntityViews.view(row));
         }
-        return fields(
-            "majors",
+        return new ReferenceVO(
             lambdaQuery().orderByAsc(Major::getId).list(),
-            "classes",
             classViews,
-            "cohorts",
             cohorts.selectList(query(Cohort.class).orderByAsc(Cohort::getId)),
-            "teachers",
             auth.role("ADMIN") ? reports.teachers() : List.of()
         );
     }
@@ -41,21 +45,27 @@ public class BaseDataServiceImpl extends DomainSupport<MajorMapper, Major> imple
         require(List.of("majors", "classes", "cohorts").contains(type), "基础数据类型不存在");
     }
 
-    /** 维护专业、班级或届次。 */
+    /** 管理员维护专业、班级和届次，班级专业变更须与已有用户一致，届次改名同步用户。 */
     @OperLog("维护基础数据")
     @Transactional
-    public Object base(String type, Long baseId, Map<String, Object> body) {
+    public IdVO base(String type, Long baseId, BaseDataSaveRequest body) {
+        validate(body);
         admin();
         type(type);
-        String name = Params.text(body, "name", type.equals("cohorts") ? 20 : 100);
+        String name = body.getName();
+        if (type.equals("cohorts")) {
+            validate(body, BaseDataSaveRequest.Cohort.class);
+        }
         if (type.equals("classes")) {
-            long majorId = Params.number(body, "majorId");
+            validate(body, BaseDataSaveRequest.SchoolClass.class);
+            long majorId = body.getMajorId();
             required(majors.selectById(majorId));
             SchoolClass row = baseId == null ? new SchoolClass() : required(classes.selectById(baseId));
             if (baseId != null) {
                 require(
-                    users.selectCount(query(User.class).eq(User::getClassId, baseId).ne(User::getMajorId, majorId)) ==
-                        0,
+                    users.selectCount(
+                        query(User.class).eq(User::getClassId, baseId).ne(User::getMajorId, majorId)
+                    ) == 0,
                     "班级已有用户，不能变更所属专业"
                 );
             }
@@ -72,7 +82,7 @@ public class BaseDataServiceImpl extends DomainSupport<MajorMapper, Major> imple
             if (baseId != null) {
                 users.update(
                     null,
-                    new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<User>()
+                    new LambdaUpdateWrapper<User>()
                         .eq(User::getCohort, row.getName())
                         .set(User::getCohort, name)
                 );
@@ -90,24 +100,27 @@ public class BaseDataServiceImpl extends DomainSupport<MajorMapper, Major> imple
             saveOrUpdate(row);
             baseId = row.getId();
         }
-        return Map.of("id", baseId);
+        return new IdVO(baseId);
     }
 
-    /** 校验引用后删除基础数据。 */
+    /** 管理员删除未被引用的基础数据，引用冲突由持久化约束拦截。 */
     @OperLog("删除基础数据")
     @Transactional
-    public Object removeBase(String type, long baseId) {
+    public MessageVO removeBase(String type, long baseId) {
         admin();
         type(type);
         if (type.equals("cohorts")) {
             Cohort row = required(cohorts.selectById(baseId));
-            require(users.selectCount(query(User.class).eq(User::getCohort, row.getName())) == 0, "届次已有用户引用");
+            require(
+                users.selectCount(query(User.class).eq(User::getCohort, row.getName())) == 0,
+                "届次已有用户引用"
+            );
             cohorts.deleteById(baseId);
         } else if (type.equals("classes")) {
             classes.deleteById(baseId);
         } else {
             removeById(baseId);
         }
-        return Map.of("message", "已删除");
+        return new MessageVO("已删除");
     }
 }

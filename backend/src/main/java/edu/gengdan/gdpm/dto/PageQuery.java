@@ -8,18 +8,22 @@ public class PageQuery {
     private Integer page;
     private Integer size;
 
+    /** 读取页码。 */
     public Integer getPage() {
         return page;
     }
 
+    /** 设置页码。 */
     public void setPage(Integer page) {
         this.page = page;
     }
 
+    /** 读取每页条数。 */
     public Integer getSize() {
         return size;
     }
 
+    /** 设置每页条数。 */
     public void setSize(Integer size) {
         this.size = size;
     }

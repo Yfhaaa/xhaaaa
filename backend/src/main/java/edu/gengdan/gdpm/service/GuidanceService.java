@@ -1,16 +1,17 @@
 package edu.gengdan.gdpm.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.gengdan.gdpm.dto.GuidanceSaveRequest;
 import edu.gengdan.gdpm.entity.GuidanceRecord;
-import java.util.*;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
+import edu.gengdan.gdpm.vo.IdVO;
+import java.util.List;
+import java.util.Map;
 
-/** GuidanceService 模块业务契约。 */
+/** 指导教师仅可为本人指导学生新增记录；查询按当前身份隔离。 */
 public interface GuidanceService extends IService<GuidanceRecord> {
-    /** 查询或新增指导记录。 */
-    Object guidance();
-    /** 查询或新增指导记录。 */
-    Object guidance(Map<String, Object> body);
+    /** 指导教师仅可为本人指导学生新增记录；查询按当前身份隔离。 */
+    List<Map<String, Object>> guidance();
+
+    /** 指导教师仅可为本人指导学生新增记录；查询按当前身份隔离。 */
+    IdVO guidance(GuidanceSaveRequest body);
 }

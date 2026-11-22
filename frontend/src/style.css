@@ -22,147 +22,11 @@ a {
   color: inherit;
   text-decoration: none;
 }
-.app-shell {
-  display: flex;
-  min-height: 100vh;
-}
-.sidebar {
-  width: 232px;
-  background: #123e34;
-  color: #d5e4de;
-  position: fixed;
-  inset: 0 auto 0 0;
-  padding: 30px 18px;
-  display: flex;
-  flex-direction: column;
-  z-index: 10;
-}
-.brand {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 0 8px 38px;
-}
-.brand-mark {
-  width: 38px;
-  height: 42px;
-  background: #e9cb87;
-  color: #173f34;
-  display: grid;
-  place-items: center;
-  font: 700 26px Georgia;
-  border-radius: 12px 3px 12px 3px;
-}
-.brand strong {
-  font-size: 17px;
-  letter-spacing: 1px;
-  color: white;
-}
-.brand small {
-  display: block;
-  font-size: 9px;
-  letter-spacing: 2px;
-  margin-top: 7px;
-  color: #9fc0b2;
-}
-.side-label {
-  font-size: 11px;
-  letter-spacing: 2px;
-  color: #88aa9e;
-  padding: 10px 17px;
-}
-.sidebar nav {
-  display: grid;
-  gap: 7px;
-}
-.sidebar nav a {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 13px 17px;
-  font-size: 14px;
-  border-radius: 7px;
-  transition: 0.2s;
-}
-.sidebar nav a:hover {
-  background: #1e5144;
-}
-.sidebar nav a.active {
-  background: #f1f5f2;
-  color: #174a3b;
-  font-weight: 600;
-}
-.sidebar nav .el-icon {
-  font-size: 18px;
-}
-.sidebar-footer {
-  margin-top: auto;
-  padding: 28px 10px 0;
-  color: #a3bfb3;
-  font-size: 11px;
-  line-height: 2;
-}
-.sidebar-footer div {
-  font-size: 10px;
-  color: #779b8d;
-}
-.live-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background: #d8be7b;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-.main-shell {
-  width: calc(100% - 232px);
-  margin-left: 232px;
-}
-.topbar {
-  height: 76px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fff;
-  border-bottom: 1px solid #e4ebe7;
-  padding: 0 36px;
-}
-.breadcrumb {
-  font-size: 13px;
-  color: #83958c;
-}
-.breadcrumb span {
-  margin: 0 16px;
-  color: #cad4ce;
-}
-.breadcrumb strong {
-  font-weight: 500;
-  color: #344d40;
-}
-.user-area {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-size: 13px;
-}
-.role-chip {
-  padding: 5px 9px;
-  background: #f0f4f2;
-  color: #628270;
-  border-radius: 4px;
-  font-size: 11px;
-}
 .page {
   max-width: 1600px;
   margin: auto;
   padding: 30px 36px;
   min-height: calc(100vh - 120px);
-}
-.page-footer {
-  padding: 5px 36px 22px;
-  font-size: 10px;
-  color: #9caaa2;
-  letter-spacing: 1px;
 }
 .page-heading {
   display: flex;
@@ -254,15 +118,24 @@ a {
   font-size: 10px;
   color: #9caba2;
 }
-.metric:after {
-  content: "";
+.metric-icon {
   position: absolute;
-  right: 24px;
-  top: 25px;
-  width: 25px;
-  height: 25px;
-  background: #edf3ef;
-  border-radius: 7px;
+  top: 22px;
+  right: 22px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #edf4f1;
+  color: #175c4b;
+  font-size: 18px;
+}
+.metric:nth-child(2) .metric-icon {
+  background: #fbf3e4;
+  color: #c4862c;
+}
+.metric:nth-child(4) .metric-icon {
+  background: #f6f1e3;
+  color: #a0874a;
 }
 .hero {
   border-radius: 12px;
@@ -541,9 +414,6 @@ a {
   .page {
     padding: 24px;
   }
-  .topbar {
-    padding: 0 24px;
-  }
   .metric-grid {
     gap: 10px;
   }
@@ -561,31 +431,6 @@ a {
   }
 }
 @media (max-width: 780px) {
-  .sidebar {
-    width: 72px;
-    padding: 20px 10px;
-  }
-  .brand {
-    padding: 0 4px 25px;
-  }
-  .brand > div:last-child,
-  .side-label,
-  .sidebar-footer {
-    display: none;
-  }
-  .sidebar nav a {
-    padding: 14px;
-    justify-content: center;
-    font-size: 0;
-  }
-  .sidebar nav .el-icon {
-    font-size: 20px;
-    flex-shrink: 0;
-  }
-  .main-shell {
-    margin-left: 72px;
-    width: calc(100% - 72px);
-  }
   .metric-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -597,19 +442,6 @@ a {
   }
   .page-heading h1 {
     font-size: 20px;
-  }
-  .topbar {
-    padding: 0 14px;
-  }
-  .breadcrumb {
-    font-size: 10px;
-  }
-  .user-area {
-    gap: 5px;
-    font-size: 11px;
-  }
-  .role-chip {
-    display: none;
   }
   .hero {
     padding: 24px;
@@ -668,4 +500,34 @@ a {
   .panel-title {
     flex-wrap: wrap;
   }
+}
+
+/* 登录页品牌标识（原全局 .brand 样式收敛到登录页作用域） */
+.login-brand .brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 0 8px 38px;
+}
+.login-brand .brand-mark {
+  width: 38px;
+  height: 42px;
+  background: #e9cb87;
+  color: #173f34;
+  display: grid;
+  place-items: center;
+  font: 700 26px Georgia;
+  border-radius: 12px 3px 12px 3px;
+}
+.login-brand .brand strong {
+  font-size: 17px;
+  letter-spacing: 1px;
+  color: white;
+}
+.login-brand .brand small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-top: 7px;
+  color: #9fc0b2;
 }

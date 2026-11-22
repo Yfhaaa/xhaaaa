@@ -57,11 +57,27 @@ java=pathlib.Path(env['JAVA_HOME'])/'bin'/('java.exe' if os.name=='nt' else 'jav
 if not java: raise SystemExit('请配置 JAVA_HOME 或把 JDK 11+ 加入 PATH')
 log=(OUT/'backend.log').open('w',encoding='utf-8')
 args=[str(java),'-Dfile.encoding=UTF-8','-Djava.io.tmpdir=run/tmp','-jar',
-      'backend/target/gdpm-system.jar',f'--server.port={port}',
+      'backend/target/gdpm-system-v3.jar',f'--server.port={port}',
       '--app.upload-dir=./'+OUT.relative_to(ROOT).as_posix()+'/uploads']
 if options.profile=='mysql':
     if not all(env.get(k) for k in ['GDPM_DB_USERNAME','GDPM_DB_PASSWORD']):
         raise SystemExit('mysql 模式需要进程环境 GDPM_DB_USERNAME、GDPM_DB_PASSWORD')
+    client=env.get('GDPM_MYSQL_CLIENT') or shutil.which('mysql')
+    if not client:
+        matches=sorted(pathlib.Path(env.get('ProgramFiles','C:/Program Files')).glob('MySQL/*/bin/mysql.exe'))
+        client=str(matches[-1]) if matches else None
+    if not client: raise SystemExit('MySQL客户端不可用')
+    mysql_name='gdpm_r3_'+uuid.uuid4().hex[:12]
+    mysql_env=env.copy();mysql_env['MYSQL_PWD']=env['GDPM_DB_PASSWORD']
+    mysql_args=[client,'--protocol=TCP','--host=127.0.0.1','--port=3306',
+                '--user='+env['GDPM_DB_USERNAME'],'--default-character-set=utf8mb4']
+    def mysql_sql(sql):
+        result=subprocess.run(mysql_args,input=sql.encode('utf-8'),capture_output=True,env=mysql_env)
+        if result.returncode: raise RuntimeError('??MySQL客户端不可用??????????????')
+    mysql_sql('CREATE DATABASE '+mysql_name+' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;')
+    init_sql=(ROOT/'sql/init.sql').read_text(encoding='utf-8-sig')
+    mysql_sql('USE '+mysql_name+';'+init_sql[init_sql.index('CREATE TABLE'):])
+    env['DB_URL']='jdbc:mysql://127.0.0.1:3306/'+mysql_name+'?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai'
     args+=['--spring.profiles.active=mysql']
 else:
     args+=['--spring.profiles.active=dev',
@@ -83,6 +99,10 @@ try:
     smoke_env['GDPM_TEST_OUT']=str(OUT/'pagination-scope')
     subprocess.run([sys.executable,'scripts/api_smoke.py'],env=smoke_env,cwd=ROOT,check=True)
     request('健康检查','GET','/health')
+    import urllib.request
+    with urllib.request.urlopen(BASE.replace('/api','')+'/v3/api-docs') as response:
+        spec=json.load(response)
+    verify('Swagger含新旧业务接口', '/api/topic-changes' in spec['paths'] and '/api/materials/{stage}' in spec['paths'])
     request('匿名访问拦截','GET','/topics',expected=401)
     request('错误密码拦截','POST','/auth/login',data=dict(username='admin',password='wrong'),expected=401)
     for who in ['admin','teacher1','teacher2','student1','student2','student3','student4']: login(who)
@@ -129,10 +149,22 @@ try:
     request('其他教师不能下载','GET',f'/files/{studentFile}','teacher2',expected=403)
     for stage in ['midterm','draft','final']:
         mid=request('提交 '+stage,'POST','/materials/'+stage,'student1',dict(title=stage+' 测试材料',fileId=studentFile))['id']
+        if stage == 'final':
+            request('未登记查重不能通过定稿','POST',f'/materials/final/{mid}/review','teacher1',dict(approved=True,comment='通过'),400)
+            request('登记超标查重','POST','/plagiarism-checks','teacher1',dict(studentId=4,platform='测试平台',rate=35,fileId=fid))
+            request('超标查重阻止定稿','POST',f'/materials/final/{mid}/review','teacher1',dict(approved=True,comment='通过'),400)
+            request('登记合格查重','POST','/plagiarism-checks','teacher1',dict(studentId=4,platform='测试平台复查',rate=20,fileId=fid))
         review(f'/materials/{stage}/{mid}/review','teacher1')
     request('记录教师指导','POST','/guidance','teacher1',dict(studentId=4,content='已完成全过程功能实现，补充测试记录。',guidanceAt='2026-11-22T10:00:00'))
     request('跨教师记录指导被拒','POST','/guidance','teacher2',dict(studentId=4,content='越权',guidanceAt='2026-11-22T10:00:00'),403)
     group=request('管理员创建答辩组','POST','/defense/groups','admin',dict(name='测试答辩组',teacherIds=[2,3],location='A302',defenseAt='2027-06-01T09:00:00'))['id']
+    request('未评阅不能安排答辩','POST','/defenses','admin',dict(studentId=4,groupId=group),400)
+    request('指导教师不能自评','POST','/thesis-reviews/assign','admin',dict(studentId=4,reviewerId=2),400)
+    request('分配评阅教师','POST','/thesis-reviews/assign','admin',dict(studentId=4,reviewerId=3))
+    assigned=request('评阅教师任务','GET','/thesis-reviews','teacher2')
+    rid=next(r['id'] for r in assigned if r['student_id']==4)
+    request('非评阅教师不能评阅','POST',f'/thesis-reviews/{rid}/review','teacher1',dict(score=80,approved=True,comment='同意'),403)
+    request('独立教师完成论文评阅','POST',f'/thesis-reviews/{rid}/review','teacher2',dict(score=80,approved=True,comment='同意答辩'))
     request('管理员安排答辩','POST','/defenses','admin',dict(studentId=4,groupId=group))
     scoreBody=dict(studentId=4,guidanceScore=90,reviewScore=80,defenseScore=95,guidanceWeight=0.3,reviewWeight=0.3,defenseWeight=0.4)
     request('错误权重被拒','POST','/scores','teacher1',{**scoreBody,'defenseWeight':0.5},400)
@@ -194,6 +226,8 @@ try:
     request('停用测试账号','PUT',f'/system/users/{u["id"]}','admin',dict(name=u['name'],roleId=3,majorId=1,classId=1,cohort='2026',enabled=0))
     request('停用后既有令牌失效','GET','/auth/me','race_student_a',expected=401)
     request('停用账号不能登录','POST','/auth/login',data=dict(username='race_student_a',password='123456'),expected=401)
+    from round3_selftest import run
+    run(request, verify, login, tokens, sample, OUT)
     request('退出登录','POST','/auth/logout','student1')
     request('退出后令牌不可复用','GET','/auth/me','student1',expected=401)
 except Exception as error:
@@ -203,6 +237,8 @@ finally:
     try: process.wait(timeout=20)
     except subprocess.TimeoutExpired: process.kill();process.wait()
     log.close()
+    if options.profile=='mysql' and 'mysql_name' in globals():
+        mysql_sql('DROP DATABASE '+mysql_name+';')
     summary=dict(profile=options.profile,concurrentStatuses=locals().get('status'),time=time.strftime('%Y-%m-%d %H:%M:%S'),passed=sum(r['passed'] for r in results),total=len(results),error=failed,checks=results)
     (OUT/'results.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding='utf-8')
     # Request files contain demo credentials, response files can contain tokens; retain only redacted results and server log.

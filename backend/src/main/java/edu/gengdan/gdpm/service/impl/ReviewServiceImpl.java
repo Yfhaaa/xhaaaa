@@ -1,46 +1,35 @@
 package edu.gengdan.gdpm.service.impl;
 
-import static edu.gengdan.gdpm.common.ApiException.require;
-import static edu.gengdan.gdpm.common.Values.*;
-
-import edu.gengdan.gdpm.common.*;
-import edu.gengdan.gdpm.entity.*;
-import edu.gengdan.gdpm.mapper.*;
-import edu.gengdan.gdpm.service.*;
-import java.time.LocalDateTime;
-import java.util.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import edu.gengdan.gdpm.common.BusinessStatus;
+import edu.gengdan.gdpm.entity.ReviewRecord;
+import edu.gengdan.gdpm.mapper.ReviewRecordMapper;
+import edu.gengdan.gdpm.service.ReviewService;
+import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-/** ReviewService 模块实现，校验权限与业务状态后持久化实体。 */
+/** 持 material:read 权限读取范围内审核留痕。 业务审核成功后记录结果、审核人和意见，失败事务不保留成功留痕。 */
 @Service
-public class ReviewServiceImpl extends DomainSupport<ReviewRecordMapper, ReviewRecord> implements ReviewService {
+public class ReviewServiceImpl
+    extends DomainSupport<ReviewRecordMapper, ReviewRecord>
+    implements ReviewService
+{
 
-    /** 查询权限范围内的审核留痕。 */
-    public Object reviews() {
+    /** 持 material:read 权限读取范围内审核留痕。 */
+    public List<Map<String, Object>> reviews() {
         auth.permission("material:read");
         return reports.reviews(auth.scope());
     }
 
-    /** 记录成功操作或审核留痕。 */
+    /** 业务审核成功后记录结果、审核人和意见，失败事务不保留成功留痕。 */
     public void record(String type, long businessId, Long studentId, boolean approved, String comment) {
-        save(
-            entity(
-                ReviewRecord.class,
-                "business_type",
-                type,
-                "business_id",
-                businessId,
-                "student_id",
-                studentId,
-                "reviewer_id",
-                auth.uid(),
-                "result",
-                BusinessStatus.reviewed(approved),
-                "comment",
-                comment
-            )
-        );
+        ReviewRecord record3 = new ReviewRecord();
+        record3.setBusinessType(type);
+        record3.setBusinessId(businessId);
+        record3.setStudentId(studentId);
+        record3.setReviewerId(auth.uid());
+        record3.setResult(BusinessStatus.reviewed(approved));
+        record3.setComment(comment);
+        save(record3);
     }
 }

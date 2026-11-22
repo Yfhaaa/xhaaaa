@@ -2,8 +2,10 @@ package edu.gengdan.gdpm.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.gengdan.gdpm.common.Result;
-import javax.servlet.*;
-import javax.servlet.http.*;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.web.filter.AccessControlFilter;
 
@@ -12,6 +14,7 @@ public class TokenFilter extends AccessControlFilter {
 
     private final ObjectMapper json;
 
+    /** 装配已配置的依赖或已验证的数据，供所属业务使用。 */
     public TokenFilter(ObjectMapper json) {
         this.json = json;
     }

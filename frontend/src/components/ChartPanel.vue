@@ -1,13 +1,23 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import * as echarts from "echarts/core";
-import { BarChart, PieChart } from "echarts/charts";
+import { BarChart, PieChart, LineChart, FunnelChart } from "echarts/charts";
 import { GridComponent, TooltipComponent, LegendComponent } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
-echarts.use([BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer]);
-const props = defineProps({ option: Object }),
-  element = ref();
-let chart, observer;
+echarts.use([
+  BarChart,
+  PieChart,
+  LineChart,
+  FunnelChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  CanvasRenderer,
+]);
+const props = defineProps({ option: Object });
+const element = ref();
+let chart;
+let observer;
 onMounted(() => {
   chart = echarts.init(element.value);
   chart.setOption(props.option);

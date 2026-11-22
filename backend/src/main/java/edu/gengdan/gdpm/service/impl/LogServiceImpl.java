@@ -1,30 +1,28 @@
 package edu.gengdan.gdpm.service.impl;
 
-import static edu.gengdan.gdpm.common.ApiException.require;
-import static edu.gengdan.gdpm.common.Values.*;
-
-import edu.gengdan.gdpm.common.*;
-import edu.gengdan.gdpm.entity.*;
-import edu.gengdan.gdpm.mapper.*;
-import edu.gengdan.gdpm.service.*;
-import java.time.LocalDateTime;
-import java.util.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import edu.gengdan.gdpm.entity.SysLog;
+import edu.gengdan.gdpm.mapper.SysLogMapper;
+import edu.gengdan.gdpm.service.LogService;
+import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-/** LogService 模块实现，校验权限与业务状态后持久化实体。 */
+/** 仅具有系统管理权限的管理员查询操作审计。 统一切面在成功操作后记录用户、动作和已脱敏的请求详情。 */
 @Service
 public class LogServiceImpl extends DomainSupport<SysLogMapper, SysLog> implements LogService {
 
-    /** 查询管理员可见的操作审计日志。 */
-    public Object logs() {
+    /** 仅具有系统管理权限的管理员查询操作审计。 */
+    public List<Map<String, Object>> logs() {
         admin();
         return reports.logs();
     }
 
-    /** 记录成功操作或审核留痕。 */
+    /** 统一切面在成功操作后记录用户、动作和已脱敏的请求详情。 */
     public void record(long userId, String action, String detail) {
-        save(entity(SysLog.class, "user_id", userId, "action", action, "detail", detail));
+        SysLog record2 = new SysLog();
+        record2.setUserId(userId);
+        record2.setAction(action);
+        record2.setDetail(detail);
+        save(record2);
     }
 }

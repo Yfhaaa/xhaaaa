@@ -29,16 +29,16 @@ check('源码无中文编码损坏占位符',not damaged,damaged)
 schema=(PROJECT/'backend/src/main/resources/db/schema.sql').read_text(encoding='utf-8-sig')
 tables=set(re.findall(r'CREATE TABLE IF NOT EXISTS\s+(\w+)',schema,re.I))
 entities={re.search(r'@TableName\("(\w+)"\)',p.read_text(encoding='utf-8')).group(1):p for p in (JAVA/'entity').glob('*.java') if '@TableName' in p.read_text(encoding='utf-8')}
-check('26张表全部有独立@TableName实体',len(tables)==26 and set(entities)==tables,sorted(entities))
+check('30张表全部有独立@TableName实体',len(tables)==30 and set(entities)==tables,sorted(entities))
 check('所有实体显式声明@TableId',all('@TableId' in p.read_text(encoding='utf-8') for p in entities.values()))
-check('26个实体均有BaseMapper',all((JAVA/'mapper'/(p.stem+'Mapper.java')).exists() and 'extends BaseMapper<' in (JAVA/'mapper'/(p.stem+'Mapper.java')).read_text(encoding='utf-8') for p in entities.values()))
+check('30个实体均有BaseMapper',all((JAVA/'mapper'/(p.stem+'Mapper.java')).exists() and 'extends BaseMapper<' in (JAVA/'mapper'/(p.stem+'Mapper.java')).read_text(encoding='utf-8') for p in entities.values()))
 main='\n'.join(p.read_text(encoding='utf-8') for p in JAVA.rglob('*.java'))
 check('删除Db及手写JDBC业务访问',not (JAVA/'core/Db.java').exists() and not re.search(r'JdbcTemplate|\bDb\b|java\.sql\.PreparedStatement',main))
 xml=(PROJECT/'backend/src/main/resources/mapper/ReportMapper.xml').read_text(encoding='utf-8')
 check('跨表统计位于XML且无请求字符串拼接', '<select id="statistics"' in xml and '${' not in xml)
 check('实际Shiro Spring过滤链与角色权限注解存在',all(word in main for word in ['ShiroFilterFactoryBean','AuthorizationAttributeSourceAdvisor','extends AuthorizingRealm','extends AccessControlFilter','@RequiresRoles','@RequiresPermissions']))
 check('操作日志由AOP统一拦截', '@Around("@annotation(annotation)")' in main and '@OperLog(' in main and 'auth.log(' not in main)
-for module in ['User','Role','Permission','BaseData','Topic','Selection','TaskBook','Proposal','Midterm','Thesis','Guidance','Review','Defense','Score','Archive','Statistics','Notification','Log']:
+for module in ['User','Role','Permission','BaseData','Topic','Selection','TaskBook','Proposal','Midterm','Thesis','Guidance','Review','Defense','Score','Archive','Statistics','Notification','Log','TopicChange','ThesisReview','Plagiarism','Profile','Message','Dossier','Exchange']:
  check(module+'模块有Service契约与实现',(JAVA/'service'/(module+'Service.java')).exists() and (JAVA/'service/impl'/(module+'ServiceImpl.java')).exists())
 check('前端六个模块目录完整',all((PROJECT/'frontend/src/views'/name).is_dir() for name in ['system','topic','material','guidance','defense','statistics']))
 check('前端API按模块拆分',all((PROJECT/'frontend/src/api'/(name+'.js')).exists() for name in ['auth','system','topic','material','guidance','defense','statistics','notification','http']))
@@ -49,9 +49,17 @@ init=(PROJECT/'sql/init.sql').read_text(encoding='utf-8-sig')
 init=init[re.search(r'CREATE TABLE',init,re.I).start():]
 data=(PROJECT/'backend/src/main/resources/db/data.sql').read_text(encoding='utf-8-sig')
 check('MySQL初始化SQL与dev结构及演示数据一致',sql_tokens(init)==sql_tokens(schema+'\n'+data))
+controllers=list((JAVA/'controller').glob('*.java'))
+check('全部控制器有中文Tag与接口Operation', all('@Tag(name = ' in p.read_text(encoding='utf-8') and
+ p.read_text(encoding='utf-8').count('@Operation(')==len(re.findall(r'@(?:Get|Post|Put|Delete|Patch)Mapping',p.read_text(encoding='utf-8'))) for p in controllers))
+check('截止提醒为每日Scheduled任务','@Scheduled(cron = "0 0 8 * * *"' in main and 'EnableScheduling' in main)
+front='\n'.join(p.read_text(encoding='utf-8') for p in (PROJECT/'frontend/src').rglob('*') if p.suffix in ['.vue','.js'])
+check('路由守卫与按钮权限指令生效',"router.beforeEach" in front and 'v-permission' in front and 'watchEffect' in front)
+check('公共列表及档案组件齐全',all((PROJECT/'frontend/src/components'/(name+'.vue')).exists() for name in
+ ['PageHeader','StatusTag','FileUploader','ReviewDialog','StudentPicker','StageTimeline','DataTable','material/StageMaterialBoard','topic/TopicBoard']))
 files=list(JAVA.rglob('*.java'))
 statistics=dict(javaSourceFiles=len(files),javaClasses=sum(len(re.findall(r'\bclass\s+\w+',p.read_text(encoding='utf-8'))) for p in files),javaInterfaces=sum(len(re.findall(r'(?<!@)\binterface\s+\w+',p.read_text(encoding='utf-8'))) for p in files),javaEnums=sum(len(re.findall(r'\benum\s+\w+',p.read_text(encoding='utf-8'))) for p in files),javaAnnotations=sum(len(re.findall(r'@interface\s+\w+',p.read_text(encoding='utf-8'))) for p in files),tableEntities=len(entities),mappers=len(list((JAVA/'mapper').glob('*.java'))),baseMappers=sum('extends BaseMapper<' in p.read_text(encoding='utf-8') for p in (JAVA/'mapper').glob('*.java')),controllers=len(list((JAVA/'controller').glob('*Controller.java'))),vuePages=len(list((PROJECT/'frontend/src/views').rglob('*.vue'))),serviceInterfaces=len(list((JAVA/'service').glob('*.java'))))
-jar=PROJECT/'backend/target/gdpm-system.jar'
+jar=PROJECT/'backend/target/gdpm-system-v3.jar'
 artifacts={}
 if jar.exists():
  artifacts['jarSha256']=hashlib.sha256(jar.read_bytes()).hexdigest()
@@ -60,7 +68,7 @@ if jar.exists():
   artifacts['javaClassMajor']=struct.unpack('>H',cl[6:8])[0]
   check('产物编译目标为Java11',artifacts['javaClassMajor']==55)
   check('产物不包含原Db或集中控制器',not any(n.endswith('/core/Db.class') or n.endswith('/api/ApiController.class') for n in names))
-check('未创建Git仓库',not (PROJECT/'.git').exists())
+check('保留用户已有Git仓库',(PROJECT/'.git').is_dir())
 result=dict(time=datetime.now().isoformat(timespec='seconds'),total=len(checks),passed=sum(c['passed'] for c in checks),statistics=statistics,artifacts=artifacts,checks=checks)
 (ROOT/'run/source-checks.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
 print(json.dumps({k:v for k,v in result.items() if k!='checks'},ensure_ascii=False,indent=2))

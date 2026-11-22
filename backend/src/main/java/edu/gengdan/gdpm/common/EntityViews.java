@@ -1,8 +1,10 @@
 package edu.gengdan.gdpm.common;
 
+import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /** 将原生实体转换为兼容既有页面的下划线字段视图。 */
@@ -23,11 +25,11 @@ public final class EntityViews {
                     continue;
                 }
                 result.put(
-                    key.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(java.util.Locale.ROOT),
+                    key.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(Locale.ROOT),
                     property.getReadMethod().invoke(entity)
                 );
             }
-        } catch (ReflectiveOperationException | java.beans.IntrospectionException e) {
+        } catch (ReflectiveOperationException | IntrospectionException e) {
             throw new IllegalStateException(e);
         }
         return result;

@@ -1,5 +1,6 @@
 package edu.gengdan.gdpm.vo;
 
+import edu.gengdan.gdpm.common.Result;
 import edu.gengdan.gdpm.dto.PageQuery;
 import java.util.List;
 
@@ -11,6 +12,7 @@ public class PageVO<T> {
     public final int page;
     public final int size;
 
+    /** 装配已配置的依赖或已验证的数据，供所属业务使用。 */
     public PageVO(List<T> rows, PageQuery query) {
         this.page = query.page();
         this.size = query.size();
@@ -20,10 +22,7 @@ public class PageVO<T> {
     }
 
     /** 在传入分页参数时返回统一分页结构。 */
-    public static Object optional(Object value, PageQuery query) {
-        if (value instanceof List && query.isPaged()) {
-            return new PageVO<>((List<?>) value, query);
-        }
-        return value;
+    public static <T> Result<?> optional(List<T> value, PageQuery query) {
+        return query.isPaged() ? Result.ok(new PageVO<>(value, query)) : Result.ok(value);
     }
 }

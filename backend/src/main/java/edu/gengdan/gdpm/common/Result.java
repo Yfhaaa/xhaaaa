@@ -1,5 +1,7 @@
 package edu.gengdan.gdpm.common;
 
+
+
 /** 所有 JSON 业务接口共享的响应结构，HTTP 状态表达实际结果。 */
 public class Result<T> {
 

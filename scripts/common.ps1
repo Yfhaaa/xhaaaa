@@ -59,7 +59,7 @@ function Invoke-Maven([string[]]$Goals) {
     Push-Location -LiteralPath (Join-Path $projectRoot 'backend')
     try {
         $relativeSettings = Resolve-Path -LiteralPath $settings -Relative
-        & $maven -B -ntp -s $relativeSettings @Goals
+        & $maven -B -ntp -s $relativeSettings "-Dmaven.repo.local=../run/m2repo" @Goals
         if ($LASTEXITCODE -ne 0) { throw 'Maven 执行失败，请检查上述输出和镜像设置。' }
     } finally { Pop-Location }
 }

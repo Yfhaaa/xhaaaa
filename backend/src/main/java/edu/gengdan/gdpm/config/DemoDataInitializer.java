@@ -5,13 +5,16 @@ import edu.gengdan.gdpm.entity.FileRecord;
 import edu.gengdan.gdpm.mapper.FileRecordMapper;
 import edu.gengdan.gdpm.mapper.UserMapper;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.support.EncodedResource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +29,7 @@ public class DemoDataInitializer implements ApplicationRunner {
     @Value("${app.upload-dir}")
     private String dir;
 
+    /** 装配已配置的依赖或已验证的数据，供所属业务使用。 */
     public DemoDataInitializer(UserMapper users, FileRecordMapper files, DataSource source) {
         this.users = users;
         this.files = files;
@@ -40,7 +44,7 @@ public class DemoDataInitializer implements ApplicationRunner {
                 try {
                     ScriptUtils.executeSqlScript(
                         connection,
-                        new org.springframework.core.io.support.EncodedResource(
+                        new EncodedResource(
                             new ClassPathResource("db/data.sql"),
                             StandardCharsets.UTF_8
                         )
@@ -51,6 +55,15 @@ public class DemoDataInitializer implements ApplicationRunner {
                     throw e;
                 }
             }
+        }
+        try (Connection connection = source.getConnection()) {
+            ScriptUtils.executeSqlScript(
+                connection,
+                new EncodedResource(
+                    new ClassPathResource("db/upgrade-demo.sql"),
+                    StandardCharsets.UTF_8
+                )
+            );
         }
         Path root = Paths.get(dir).toAbsolutePath().normalize();
         Files.createDirectories(root);

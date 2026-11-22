@@ -1,5 +1,7 @@
 package edu.gengdan.gdpm.entity;
 
+import java.time.LocalDateTime;
+
 /** 四类过程材料实体共享的版本和审核字段契约。 */
 public interface ProcessMaterial {
     Long getId();
@@ -20,14 +22,14 @@ public interface ProcessMaterial {
     void setVersion(Integer value);
     String getStatus();
     void setStatus(String value);
-    java.time.LocalDateTime getSubmittedAt();
-    void setSubmittedAt(java.time.LocalDateTime value);
+    LocalDateTime getSubmittedAt();
+    void setSubmittedAt(LocalDateTime value);
     Long getReviewerId();
     void setReviewerId(Long value);
     String getReviewComment();
     void setReviewComment(String value);
-    java.time.LocalDateTime getReviewedAt();
-    void setReviewedAt(java.time.LocalDateTime value);
+    LocalDateTime getReviewedAt();
+    void setReviewedAt(LocalDateTime value);
     Integer getRevisionCount();
     void setRevisionCount(Integer value);
 }

@@ -1,18 +1,21 @@
 package edu.gengdan.gdpm.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.gengdan.gdpm.dto.NoticeSaveRequest;
 import edu.gengdan.gdpm.entity.Notice;
-import java.util.*;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
+import edu.gengdan.gdpm.vo.IdVO;
+import edu.gengdan.gdpm.vo.MessageVO;
+import java.util.List;
+import java.util.Map;
 
-/** NotificationService 模块业务契约。 */
+/** 所有登录用户查询通知公告。 管理员发布标题和正文均完整的通知，成功后记录操作审计。 管理员删除通知，成功后记录操作审计。 */
 public interface NotificationService extends IService<Notice> {
-    /** 查询通知列表。 */
-    Object notices();
-    /** 发布通知。 */
-    Object notice(Map<String, Object> body);
-    /** 删除通知。 */
-    Object removeNotice(long noticeId);
+    /** 所有登录用户查询通知公告。 */
+    List<Map<String, Object>> notices();
+
+    /** 管理员发布标题和正文均完整的通知，成功后记录操作审计。 */
+    IdVO notice(NoticeSaveRequest body);
+
+    /** 管理员删除通知，成功后记录操作审计。 */
+    MessageVO removeNotice(long noticeId);
 }

@@ -1,6 +1,19 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="edu.gengdan.gdpm.mapper.ReportMapper">
+    <select id="progressState" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM student_assignment WHERE student_id=#{studentId}) selection,
+            (SELECT COUNT(*) FROM student_assignment WHERE student_id=#{studentId}) topic,
+            (SELECT COUNT(*) FROM task_book WHERE student_id=#{studentId} AND status='已通过') task,
+            (SELECT COUNT(*) FROM proposal_report WHERE student_id=#{studentId} AND status='已通过') proposal,
+            (SELECT COUNT(*) FROM midterm_check WHERE student_id=#{studentId} AND status='已通过') midterm,
+            (SELECT COUNT(*) FROM thesis_info WHERE student_id=#{studentId} AND stage='draft' AND
+        status='已通过') draft,
+            (SELECT COUNT(*) FROM thesis_info WHERE student_id=#{studentId} AND stage='final' AND
+        status='已通过') final,
+            (SELECT COUNT(*) FROM defense_info WHERE student_id=#{studentId} AND status='已完成') defense
+    </select>
     <select id="roles" resultType="string">
         SELECT
             r.code
@@ -204,7 +217,8 @@
                     <when test='scope.admin'>1=1</when>
                     <when test='scope.student'>d.student_id=#{scope.userId}</when>
                     <otherwise>
-                        EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=d.student_id AND
+                        EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=d.student_id
+                        AND
                                                 scoped.teacher_id=#{scope.userId})
                     </otherwise>
                 </choose>
@@ -277,7 +291,8 @@
                     <when test='scope.admin'>1=1</when>
                     <when test='scope.student'>r.student_id=#{scope.userId}</when>
                     <otherwise>
-                        EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=r.student_id AND
+                        EXISTS (SELECT 1 FROM student_assignment scoped WHERE scoped.student_id=r.student_id
+                        AND
                                                 scoped.teacher_id=#{scope.userId})
                     </otherwise>
                 </choose>
@@ -460,7 +475,9 @@
                                             WHERE
                                                 newer.student_id = u.id
                                                 AND newer.stage = material.stage
-                                                AND newer.version &gt; material.version
+                                                AND newer.version
+        &gt;
+        material.version
                                         )
                                 ) THEN 1
                                 ELSE 0
@@ -482,7 +499,9 @@
                                             WHERE
                                                 newer.student_id = u.id
                                                 AND newer.stage = material.stage
-                                                AND newer.version &gt; material.version
+                                                AND newer.version
+        &gt;
+        material.version
                                         )
                                 ) THEN 1
                                 ELSE 0
@@ -504,7 +523,9 @@
                                             WHERE
                                                 newer.student_id = u.id
                                                 AND newer.stage = material.stage
-                                                AND newer.version &gt; material.version
+                                                AND newer.version
+        &gt;
+        material.version
                                         )
                                 ) THEN 1
                                 ELSE 0
@@ -526,7 +547,9 @@
                                             WHERE
                                                 newer.student_id = u.id
                                                 AND newer.stage = material.stage
-                                                AND newer.version &gt; material.version
+                                                AND newer.version
+        &gt;
+        material.version
                                         )
                                 ) THEN 1
                                 ELSE 0
@@ -548,7 +571,9 @@
                                             WHERE
                                                 newer.student_id = u.id
                                                 AND newer.stage = material.stage
-                                                AND newer.version &gt; material.version
+                                                AND newer.version
+        &gt;
+        material.version
                                         )
                                 ) THEN 1
                                 ELSE 0
@@ -580,7 +605,7 @@
             <when test="scope.student">CASE WHEN score.published=1 THEN score.total_score ELSE NULL END</when>
             <otherwise>score.total_score</otherwise>
         </choose>
-         total_score
+        total_score
                 FROM
                     sys_user u
                     JOIN sys_user_role ur ON ur.user_id = u.id
@@ -604,7 +629,7 @@
             AND a.teacher_id=#{filters.teacherId}
         </if>
         <if test="filters.cohort != null and filters.cohort != ''">AND u.cohort=#{filters.cohort}</if>
-            ) summary
+        ) summary
         GROUP BY
             summary.name
         ORDER BY

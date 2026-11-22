@@ -1,4 +1,3 @@
--- MySQL 8 首次初始化；已有数据请先备份。请以 UTF-8 执行。
 CREATE DATABASE IF NOT EXISTS gdpm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE gdpm;
@@ -28,6 +27,8 @@ CREATE TABLE IF NOT EXISTS sys_user (
     major_id BIGINT,
     class_id BIGINT,
     cohort VARCHAR(20),
+    email VARCHAR(120),
+    phone VARCHAR(30),
     enabled INT NOT NULL DEFAULT 1,
     FOREIGN KEY (major_id) REFERENCES major (id),
     FOREIGN KEY (class_id) REFERENCES school_class (id)
@@ -81,6 +82,7 @@ CREATE TABLE IF NOT EXISTS workflow_step (
     code VARCHAR(30) NOT NULL UNIQUE,
     name VARCHAR(80) NOT NULL,
     deadline TIMESTAMP NOT NULL,
+    plagiarism_threshold DECIMAL(5, 2) NOT NULL DEFAULT 30,
     sort_order INT NOT NULL
 );
 
@@ -297,6 +299,67 @@ CREATE TABLE IF NOT EXISTS notice (
     publisher_id BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (publisher_id) REFERENCES sys_user (id)
+);
+
+CREATE TABLE IF NOT EXISTS topic_change (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL,
+    old_topic_id BIGINT NOT NULL,
+    new_topic_id BIGINT NOT NULL,
+    old_teacher_id BIGINT NOT NULL,
+    new_teacher_id BIGINT NOT NULL,
+    reason VARCHAR(2000) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT '待原教师审批',
+    approval_step INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES sys_user (id),
+    FOREIGN KEY (old_topic_id) REFERENCES topic_info (id),
+    FOREIGN KEY (new_topic_id) REFERENCES topic_info (id),
+    FOREIGN KEY (old_teacher_id) REFERENCES sys_user (id),
+    FOREIGN KEY (new_teacher_id) REFERENCES sys_user (id)
+);
+
+CREATE TABLE IF NOT EXISTS thesis_review (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL UNIQUE,
+    reviewer_id BIGINT NOT NULL,
+    thesis_id BIGINT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT '待评阅',
+    comment VARCHAR(2000),
+    score DECIMAL(5, 2),
+    agree_defense INT,
+    assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at TIMESTAMP NULL,
+    FOREIGN KEY (student_id) REFERENCES sys_user (id),
+    FOREIGN KEY (reviewer_id) REFERENCES sys_user (id),
+    FOREIGN KEY (thesis_id) REFERENCES thesis_info (id)
+);
+
+CREATE TABLE IF NOT EXISTS plagiarism_check (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL,
+    thesis_id BIGINT NOT NULL,
+    platform VARCHAR(100) NOT NULL,
+    rate DECIMAL(5, 2) NOT NULL,
+    file_id BIGINT NOT NULL,
+    registrar_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES sys_user (id),
+    FOREIGN KEY (thesis_id) REFERENCES thesis_info (id),
+    FOREIGN KEY (file_id) REFERENCES file_record (id),
+    FOREIGN KEY (registrar_id) REFERENCES sys_user (id)
+);
+
+CREATE TABLE IF NOT EXISTS sys_message (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content VARCHAR(2000) NOT NULL,
+    path VARCHAR(200) NOT NULL,
+    read_flag INT NOT NULL DEFAULT 0,
+    event_key VARCHAR(200) UNIQUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES sys_user (id)
 );
 
 INSERT INTO
@@ -1033,3 +1096,128 @@ VALUES
         '材料支持 PDF、Word、TXT 及 ZIP，单文件不超过20MB；每次重新提交保留独立版本及审核意见。',
         1
     );
+
+INSERT INTO
+    thesis_review (
+        student_id,
+        reviewer_id,
+        thesis_id,
+        status,
+        comment,
+        score,
+        agree_defense,
+        reviewed_at
+    )
+SELECT
+    7,
+    3,
+    id,
+    '已评阅',
+    '结构完整、论证充分，同意答辩。',
+    86,
+    1,
+    CURRENT_TIMESTAMP
+FROM
+    thesis_info
+WHERE
+    student_id = 7
+    AND stage = 'final';
+
+INSERT INTO
+    plagiarism_check (
+        student_id,
+        thesis_id,
+        platform,
+        rate,
+        file_id,
+        registrar_id
+    )
+SELECT
+    7,
+    id,
+    '演示查重平台',
+    12.5,
+    3,
+    1
+FROM
+    thesis_info
+WHERE
+    student_id = 7
+    AND stage = 'final';
+
+INSERT INTO
+    sys_message (user_id, title, content, path, event_key)
+VALUES
+    (
+        7,
+        '成绩已发布',
+        '毕业设计成绩89.60分，归档材料已齐全。',
+        '/my-project',
+        'demo:score:7'
+    ),
+    (
+        5,
+        '开题报告已退回',
+        '请补充技术路线和进度计划。',
+        '/my-project',
+        'demo:proposal:5'
+    ),
+    (
+        2,
+        '过程管理工作提醒',
+        '请及时查看学生申请与材料待办。',
+        '/pending-reviews',
+        'demo:teacher:2'
+    );
+
+INSERT INTO
+    topic_info (
+        id,
+        title,
+        description,
+        teacher_id,
+        major_id,
+        capacity,
+        status,
+        reviewer_id,
+        review_comment
+    )
+VALUES
+    (
+        5,
+        '跨学科校园数据分析平台',
+        '面向计算机专业的数据分析与协同设计课题。',
+        3,
+        1,
+        2,
+        '已通过',
+        1,
+        '同意发布'
+    );
+
+INSERT INTO
+    topic_change (
+        id,
+        student_id,
+        old_topic_id,
+        new_topic_id,
+        old_teacher_id,
+        new_teacher_id,
+        reason,
+        status,
+        approval_step
+    )
+VALUES
+    (1, 5, 1, 5, 2, 3, '希望调整研究方向，现保留原课题继续完善研究计划。', '已退回', 1);
+
+INSERT INTO
+    review_record (
+        business_type,
+        business_id,
+        student_id,
+        reviewer_id,
+        result,
+        comment
+    )
+VALUES
+    ('topic_change', 1, 5, 2, '已退回', '第1级：请先完善研究计划后再申请变更。');

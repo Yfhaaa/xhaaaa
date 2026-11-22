@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS sys_user (
     major_id BIGINT,
     class_id BIGINT,
     cohort VARCHAR(20),
+    email VARCHAR(120),
+    phone VARCHAR(30),
     enabled INT NOT NULL DEFAULT 1,
     FOREIGN KEY (major_id) REFERENCES major (id),
     FOREIGN KEY (class_id) REFERENCES school_class (id)
@@ -76,6 +78,7 @@ CREATE TABLE IF NOT EXISTS workflow_step (
     code VARCHAR(30) NOT NULL UNIQUE,
     name VARCHAR(80) NOT NULL,
     deadline TIMESTAMP NOT NULL,
+    plagiarism_threshold DECIMAL(5, 2) NOT NULL DEFAULT 30,
     sort_order INT NOT NULL
 );
 
@@ -292,4 +295,65 @@ CREATE TABLE IF NOT EXISTS notice (
     publisher_id BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (publisher_id) REFERENCES sys_user (id)
+);
+
+CREATE TABLE IF NOT EXISTS topic_change (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL,
+    old_topic_id BIGINT NOT NULL,
+    new_topic_id BIGINT NOT NULL,
+    old_teacher_id BIGINT NOT NULL,
+    new_teacher_id BIGINT NOT NULL,
+    reason VARCHAR(2000) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT '待原教师审批',
+    approval_step INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES sys_user (id),
+    FOREIGN KEY (old_topic_id) REFERENCES topic_info (id),
+    FOREIGN KEY (new_topic_id) REFERENCES topic_info (id),
+    FOREIGN KEY (old_teacher_id) REFERENCES sys_user (id),
+    FOREIGN KEY (new_teacher_id) REFERENCES sys_user (id)
+);
+
+CREATE TABLE IF NOT EXISTS thesis_review (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL UNIQUE,
+    reviewer_id BIGINT NOT NULL,
+    thesis_id BIGINT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT '待评阅',
+    comment VARCHAR(2000),
+    score DECIMAL(5, 2),
+    agree_defense INT,
+    assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at TIMESTAMP NULL,
+    FOREIGN KEY (student_id) REFERENCES sys_user (id),
+    FOREIGN KEY (reviewer_id) REFERENCES sys_user (id),
+    FOREIGN KEY (thesis_id) REFERENCES thesis_info (id)
+);
+
+CREATE TABLE IF NOT EXISTS plagiarism_check (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL,
+    thesis_id BIGINT NOT NULL,
+    platform VARCHAR(100) NOT NULL,
+    rate DECIMAL(5, 2) NOT NULL,
+    file_id BIGINT NOT NULL,
+    registrar_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES sys_user (id),
+    FOREIGN KEY (thesis_id) REFERENCES thesis_info (id),
+    FOREIGN KEY (file_id) REFERENCES file_record (id),
+    FOREIGN KEY (registrar_id) REFERENCES sys_user (id)
+);
+
+CREATE TABLE IF NOT EXISTS sys_message (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content VARCHAR(2000) NOT NULL,
+    path VARCHAR(200) NOT NULL,
+    read_flag INT NOT NULL DEFAULT 0,
+    event_key VARCHAR(200) UNIQUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES sys_user (id)
 );

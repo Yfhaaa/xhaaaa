@@ -5,9 +5,10 @@ import edu.gengdan.gdpm.common.ApiException;
 import edu.gengdan.gdpm.entity.MidtermCheck;
 import edu.gengdan.gdpm.mapper.MidtermCheckMapper;
 import edu.gengdan.gdpm.service.MidtermService;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
-/** MidtermCheck 的类型化阶段服务。 */
+/** 持 material:read 权限查询范围内各阶段全部历史版本。 */
 @Service
 public class MidtermServiceImpl
     extends AbstractMaterialStageService<MidtermCheckMapper, MidtermCheck>
@@ -29,6 +30,6 @@ public class MidtermServiceImpl
 
     /** 拒绝与当前模块不匹配的材料阶段。 */
     protected void validateStage(String stage) {
-        ApiException.require(java.util.List.of("midterm").contains(stage), "材料阶段不存在");
+        ApiException.require(List.of("midterm").contains(stage), "材料阶段不存在");
     }
 }

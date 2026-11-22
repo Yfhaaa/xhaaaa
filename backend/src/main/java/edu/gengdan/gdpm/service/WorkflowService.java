@@ -1,16 +1,17 @@
 package edu.gengdan.gdpm.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.gengdan.gdpm.dto.WorkflowUpdateRequest;
 import edu.gengdan.gdpm.entity.WorkflowStep;
-import java.util.*;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
+import edu.gengdan.gdpm.vo.MessageVO;
+import java.util.List;
+import java.util.Map;
 
-/** WorkflowService 模块业务契约。 */
+/** 登录用户可读流程节点；仅管理员可修改截止时间和可选重复率阈值。 */
 public interface WorkflowService extends IService<WorkflowStep> {
-    /** 查询或更新流程截止时间。 */
-    Object workflow();
-    /** 查询或更新流程截止时间。 */
-    Object workflow(long workflowId, Map<String, Object> body);
+    /** 登录用户可读流程节点；仅管理员可修改截止时间和可选重复率阈值。 */
+    List<Map<String, Object>> workflow();
+
+    /** 登录用户可读流程节点；仅管理员可修改截止时间和可选重复率阈值。 */
+    MessageVO workflow(long workflowId, WorkflowUpdateRequest body);
 }

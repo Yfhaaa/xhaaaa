@@ -1,6 +1,8 @@
 package edu.gengdan.gdpm.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 
 /** sys_user_role 表实体。
  * 关联表保留数据库复合主键；操作必须同时指定两个字段的条件，禁止按单一主键修改。
@@ -15,18 +17,22 @@ public class SysUserRole {
     /** 角色编号。 */
     private Long roleId;
 
+    /** 读取用户编号。 */
     public Long getUserId() {
         return userId;
     }
 
+    /** 设置用户编号。 */
     public void setUserId(Long userId) {
         this.userId = userId;
     }
 
+    /** 读取角色编号。 */
     public Long getRoleId() {
         return roleId;
     }
 
+    /** 设置角色编号。 */
     public void setRoleId(Long roleId) {
         this.roleId = roleId;
     }

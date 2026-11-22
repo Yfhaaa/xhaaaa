@@ -1,16 +1,17 @@
 package edu.gengdan.gdpm.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.gengdan.gdpm.dto.RoleSaveRequest;
 import edu.gengdan.gdpm.entity.SysRole;
-import java.util.*;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
+import edu.gengdan.gdpm.vo.MessageVO;
+import java.util.List;
+import java.util.Map;
 
-/** RoleService 模块业务契约。 */
+/** 管理员查询内置角色及关联权限编号。 管理员维护角色名称及权限，管理员角色必须保留系统管理权限。 */
 public interface RoleService extends IService<SysRole> {
-    /** 查询角色及其权限列表。 */
-    Object roles();
-    /** 维护角色权限关联。 */
-    Object role(long roleId, Map<String, Object> body);
+    /** 管理员查询内置角色及关联权限编号。 */
+    List<Map<String, Object>> roles();
+
+    /** 管理员维护角色名称及权限，管理员角色必须保留系统管理权限。 */
+    MessageVO role(long roleId, RoleSaveRequest body);
 }

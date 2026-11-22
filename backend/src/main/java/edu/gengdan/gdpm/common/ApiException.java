@@ -1,10 +1,13 @@
 package edu.gengdan.gdpm.common;
 
+
+
 /** 携带 HTTP 状态的业务异常。 */
 public class ApiException extends RuntimeException {
 
     public final int status;
 
+    /** 装配已配置的依赖或已验证的数据，供所属业务使用。 */
     public ApiException(int status, String message) {
         super(message);
         this.status = status;

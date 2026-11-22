@@ -1,18 +1,20 @@
 package edu.gengdan.gdpm.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.gengdan.gdpm.dto.BaseDataSaveRequest;
 import edu.gengdan.gdpm.entity.Major;
-import java.util.*;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
+import edu.gengdan.gdpm.vo.IdVO;
+import edu.gengdan.gdpm.vo.MessageVO;
+import edu.gengdan.gdpm.vo.ReferenceVO;
 
-/** BaseDataService 模块业务契约。 */
+/** 已登录用户获取专业、班级和届次，教师列表仅管理员可见。 管理员维护专业、班级和届次，班级专业变更须与已有用户一致，届次改名同步用户。 管理员删除未被引用的基础数据，引用冲突由持久化约束拦截。 */
 public interface BaseDataService extends IService<Major> {
-    /** 查询页面所需基础下拉数据。 */
-    Object reference();
-    /** 维护专业、班级或届次。 */
-    Object base(String type, Long baseId, Map<String, Object> body);
-    /** 校验引用后删除基础数据。 */
-    Object removeBase(String type, long baseId);
+    /** 已登录用户获取专业、班级和届次，教师列表仅管理员可见。 */
+    ReferenceVO reference();
+
+    /** 管理员维护专业、班级和届次，班级专业变更须与已有用户一致，届次改名同步用户。 */
+    IdVO base(String type, Long baseId, BaseDataSaveRequest body);
+
+    /** 管理员删除未被引用的基础数据，引用冲突由持久化约束拦截。 */
+    MessageVO removeBase(String type, long baseId);
 }

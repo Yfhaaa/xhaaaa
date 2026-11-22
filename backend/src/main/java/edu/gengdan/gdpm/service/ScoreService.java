@@ -1,18 +1,21 @@
 package edu.gengdan.gdpm.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.gengdan.gdpm.dto.ScoreSaveRequest;
 import edu.gengdan.gdpm.entity.ScoreInfo;
-import java.util.*;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
+import edu.gengdan.gdpm.vo.MessageVO;
+import edu.gengdan.gdpm.vo.ScoreSavedVO;
+import java.util.List;
+import java.util.Map;
 
-/** ScoreService 模块业务契约。 */
+/** 按角色范围查询成绩，学生仅可见本人已发布成绩。 指导教师或管理员锁定学生后录分；引用已完成评阅分，权重和为一，发布归档后禁改。 管理员仅发布未发布成绩，发布后锁定改分并通知学生。 */
 public interface ScoreService extends IService<ScoreInfo> {
-    /** 查询范围内可见成绩并隐藏未发布成绩。 */
-    Object scores();
-    /** 计算综合成绩并校验分数和权重。 */
-    Object score(Map<String, Object> body);
-    /** 发布成绩并锁定后续修改。 */
-    Object publish(long scoreId);
+    /** 按角色范围查询成绩，学生仅可见本人已发布成绩。 */
+    List<Map<String, Object>> scores();
+
+    /** 指导教师或管理员锁定学生后录分；引用已完成评阅分，权重和为一，发布归档后禁改。 */
+    ScoreSavedVO score(ScoreSaveRequest body);
+
+    /** 管理员仅发布未发布成绩，发布后锁定改分并通知学生。 */
+    MessageVO publish(long scoreId);
 }

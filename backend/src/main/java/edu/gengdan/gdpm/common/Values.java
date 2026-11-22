@@ -1,6 +1,7 @@
 package edu.gengdan.gdpm.common;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /** 既有下划线字段视图的值转换工具，不承担数据库访问。 */
 public final class Values {

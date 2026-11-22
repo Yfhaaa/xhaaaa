@@ -1,20 +1,27 @@
 package edu.gengdan.gdpm.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import edu.gengdan.gdpm.dto.DefenseArrangeRequest;
+import edu.gengdan.gdpm.dto.DefenseGroupRequest;
 import edu.gengdan.gdpm.entity.DefenseInfo;
-import java.util.*;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
+import edu.gengdan.gdpm.vo.IdVO;
+import java.util.List;
+import java.util.Map;
 
-/** DefenseService 模块业务契约。 */
+/**
+ * 持 defense:read 权限查询角色范围内答辩分组。 管理员创建由有效教师组成的答辩组，记录时间与地点。 持 defense:read 权限读取本人或指导范围内答辩安排。
+ * 管理员仅为定稿通过且评阅同意的学生安排答辩，录分后禁止调整。
+ */
 public interface DefenseService extends IService<DefenseInfo> {
-    /** 查询数据范围内的答辩组。 */
-    Object groups();
-    /** 创建答辩组并验证教师身份。 */
-    Object group(Map<String, Object> body);
-    /** 查询数据范围内的答辩安排。 */
-    Object defenses();
-    /** 校验定稿后安排学生答辩。 */
-    Object arrange(Map<String, Object> body);
+    /** 持 defense:read 权限查询角色范围内答辩分组。 */
+    List<Map<String, Object>> groups();
+
+    /** 管理员创建由有效教师组成的答辩组，记录时间与地点。 */
+    IdVO group(DefenseGroupRequest body);
+
+    /** 持 defense:read 权限读取本人或指导范围内答辩安排。 */
+    List<Map<String, Object>> defenses();
+
+    /** 管理员仅为定稿通过且评阅同意的学生安排答辩，录分后禁止调整。 */
+    IdVO arrange(DefenseArrangeRequest body);
 }

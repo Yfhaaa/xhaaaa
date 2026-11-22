@@ -2,5 +2,5 @@ package edu.gengdan.gdpm.service;
 
 import edu.gengdan.gdpm.entity.ProposalReport;
 
-/** ProposalReport 阶段的业务契约。 */
+/** 持 material:read 权限查询范围内各阶段全部历史版本。 */
 public interface ProposalService extends MaterialStageService<ProposalReport> {}

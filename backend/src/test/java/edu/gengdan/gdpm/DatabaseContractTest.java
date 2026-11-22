@@ -1,21 +1,39 @@
 package edu.gengdan.gdpm;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.gengdan.gdpm.auth.BearerToken;
 import edu.gengdan.gdpm.common.ApiException;
-import edu.gengdan.gdpm.entity.*;
-import edu.gengdan.gdpm.mapper.*;
+import edu.gengdan.gdpm.dto.MaterialSubmitRequest;
+import edu.gengdan.gdpm.entity.StudentAssignment;
+import edu.gengdan.gdpm.entity.SysLog;
+import edu.gengdan.gdpm.entity.SysRolePermission;
+import edu.gengdan.gdpm.entity.SysSession;
+import edu.gengdan.gdpm.entity.User;
+import edu.gengdan.gdpm.mapper.StudentAssignmentMapper;
+import edu.gengdan.gdpm.mapper.SysLogMapper;
+import edu.gengdan.gdpm.mapper.SysRolePermissionMapper;
+import edu.gengdan.gdpm.mapper.SysSessionMapper;
+import edu.gengdan.gdpm.mapper.UserMapper;
 import edu.gengdan.gdpm.service.TaskBookService;
-import java.util.*;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
+import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.util.ThreadContext;
 import org.junit.jupiter.api.AfterEach;
@@ -93,7 +111,7 @@ class DatabaseContractTest {
     ObjectMapper json;
 
     @Autowired
-    org.apache.shiro.mgt.SecurityManager securityManager;
+    SecurityManager securityManager;
 
     @Autowired
     GuardProbe probe;
@@ -195,7 +213,10 @@ class DatabaseContractTest {
     void scopeCannotBeExpandedByPagingOrForgedStudentParameters() throws Exception {
         String token = login("teacher1");
         mvc.perform(
-            get("/api/students?page=1&size=1&studentId=6&teacherId=3").header("Authorization", "Bearer " + token)
+            get("/api/students?page=1&size=1&studentId=6&teacherId=3").header(
+                "Authorization",
+                "Bearer " + token
+            )
         )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.total").value(2))
@@ -204,9 +225,9 @@ class DatabaseContractTest {
         mvc.perform(get("/api/students?page=0&size=1").header("Authorization", "Bearer " + token)).andExpect(
             status().isBadRequest()
         );
-        mvc.perform(get("/api/students?page=1&size=201").header("Authorization", "Bearer " + token)).andExpect(
-            status().isBadRequest()
-        );
+        mvc.perform(
+            get("/api/students?page=1&size=201").header("Authorization", "Bearer " + token)
+        ).andExpect(status().isBadRequest());
         mvc.perform(get("/api/students?page=x&size=20").header("Authorization", "Bearer " + token))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value(400));
@@ -227,9 +248,14 @@ class DatabaseContractTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"title\":\"AOP验收\",\"content\":\"操作日志验收\"}")
         ).andExpect(status().isOk());
-        List<SysLog> recorded = logs.selectList(new LambdaQueryWrapper<SysLog>().eq(SysLog::getAction, "发布通知"));
+        List<SysLog> recorded = logs.selectList(
+            new LambdaQueryWrapper<SysLog>().eq(SysLog::getAction, "发布通知")
+        );
         assertEquals(before + 1, recorded.size());
         assertTrue(recorded.stream().allMatch(row -> row.getUserId() == 1L));
+        assertTrue(recorded.stream().allMatch(row -> row.getDetail().contains("POST /api/notices")));
+        assertTrue(recorded.stream().allMatch(row -> row.getDetail().contains("对象 #")));
+        assertTrue(recorded.stream().allMatch(row -> row.getDetail().contains("来源 ")));
         assertTrue(recorded.stream().noneMatch(row -> row.getDetail().contains("123456")));
         String student = login("student1");
         mvc.perform(
@@ -238,15 +264,22 @@ class DatabaseContractTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"title\":\"越权\",\"content\":\"越权\"}")
         ).andExpect(status().isForbidden());
-        assertEquals(before + 1, logs.selectCount(new LambdaQueryWrapper<SysLog>().eq(SysLog::getAction, "发布通知")));
+        assertEquals(
+            before + 1,
+            logs.selectCount(new LambdaQueryWrapper<SysLog>().eq(SysLog::getAction, "发布通知"))
+        );
     }
 
     /** 验证绕过控制器时服务层仍拒绝跨教师数据。 */
     @Test
     void serviceRejectsCrossTeacherAccessWithoutController() throws Exception {
         bind(login("teacher2"));
+        MaterialSubmitRequest request = new MaterialSubmitRequest();
+        request.setStudentId(5L);
+        request.setTitle("越权任务书");
+        request.setFileId(2L);
         ApiException error = assertThrows(ApiException.class, () ->
-            taskService.submit("task", Map.of("studentId", 5L, "title", "越权任务书", "fileId", 2L))
+            taskService.submit("task", request)
         );
         assertEquals(403, error.status);
     }
@@ -276,7 +309,7 @@ class DatabaseContractTest {
                     .andExpect(status().isOk())
                     .andReturn()
                     .getResponse()
-                    .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+                    .getContentAsString(StandardCharsets.UTF_8);
                 JsonNode data = json.readTree(response).path("data");
                 for (JsonNode group : data.path("groups")) {
                     String name = group.path("name").asText();

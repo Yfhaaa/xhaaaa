@@ -1,20 +1,36 @@
 package edu.gengdan.gdpm.service.impl;
 
-import static edu.gengdan.gdpm.common.ApiException.require;
-import static edu.gengdan.gdpm.common.Values.*;
+import static edu.gengdan.gdpm.common.Values.fields;
+import static edu.gengdan.gdpm.common.Values.id;
 
-import edu.gengdan.gdpm.common.*;
-import edu.gengdan.gdpm.entity.*;
-import edu.gengdan.gdpm.mapper.*;
-import edu.gengdan.gdpm.service.*;
-import java.math.*;
-import java.time.LocalDateTime;
-import java.util.*;
+import edu.gengdan.gdpm.common.ApiException;
+import edu.gengdan.gdpm.common.BusinessStatus;
+import edu.gengdan.gdpm.common.Constants;
+import edu.gengdan.gdpm.common.EntityViews;
+import edu.gengdan.gdpm.entity.ArchiveRecord;
+import edu.gengdan.gdpm.entity.DefenseInfo;
+import edu.gengdan.gdpm.entity.ScoreInfo;
+import edu.gengdan.gdpm.entity.TopicInfo;
+import edu.gengdan.gdpm.mapper.ArchiveRecordMapper;
+import edu.gengdan.gdpm.service.MaterialService;
+import edu.gengdan.gdpm.service.NotificationService;
+import edu.gengdan.gdpm.service.StatisticsService;
+import edu.gengdan.gdpm.service.UserService;
+import edu.gengdan.gdpm.service.WorkflowService;
+import edu.gengdan.gdpm.vo.DashboardVO;
+import edu.gengdan.gdpm.vo.StatisticsVO;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-/** StatisticsService 模块实现，校验权限与业务状态后持久化实体。 */
+/**
+ * 按当前身份的数据范围汇总九节点进度，学生未发布成绩保持隐藏。 持 dashboard:read 权限查看当前身份的待办、进度、通知与截止提醒。 持 stats:read
+ * 权限按专业、班级或教师统计，先做身份范围过滤再应用业务筛选。
+ */
 @Service
 public class StatisticsServiceImpl
     extends DomainSupport<ArchiveRecordMapper, ArchiveRecord>
@@ -44,7 +60,7 @@ public class StatisticsServiceImpl
         return result;
     }
 
-    /** 计算九个业务节点的完成进度。 */
+    /** 按当前身份的数据范围汇总九节点进度，学生未发布成绩保持隐藏。 */
     public List<Map<String, Object>> progress() {
         List<Map<String, Object>> rows = studentService.students();
         Map<String, String> labels = Map.of(
@@ -66,20 +82,24 @@ public class StatisticsServiceImpl
             List<String> missing = new ArrayList<>();
             for (String stage : Constants.STAGES) {
                 Map<String, Object> m = materials.latest(sid, stage);
-                states.put(stage, m == null ? Map.of("status", "待提交") : m);
-                if (m != null && "已通过".equals(m.get("status"))) {
+                states.put(stage, m == null ? Map.of("status", BusinessStatus.NOT_SUBMITTED.label()) : m);
+                if (m != null && BusinessStatus.APPROVED.label().equals(m.get("status"))) {
                     done++;
                 } else {
                     missing.add(labels.get(stage));
                 }
             }
             long defense = defenses.selectCount(
-                    query(DefenseInfo.class).eq(DefenseInfo::getStudentId, sid).eq(DefenseInfo::getStatus, "已完成")
+                    query(DefenseInfo.class)
+                        .eq(DefenseInfo::getStudentId, sid)
+                        .eq(DefenseInfo::getStatus, BusinessStatus.COMPLETED.label())
                 ),
                 published = scores.selectCount(
                     query(ScoreInfo.class).eq(ScoreInfo::getStudentId, sid).eq(ScoreInfo::getPublished, 1)
                 ),
-                archived = archives.selectCount(query(ArchiveRecord.class).eq(ArchiveRecord::getStudentId, sid));
+                archived = archives.selectCount(
+                    query(ArchiveRecord.class).eq(ArchiveRecord::getStudentId, sid)
+                );
             done += defense + published + archived;
             row.put("materials", states);
             row.put("missing_materials", missing);
@@ -101,50 +121,54 @@ public class StatisticsServiceImpl
         return rows;
     }
 
-    /** 生成当前角色的待办、进度和提醒。 */
-    public Object dashboard() {
+    /** 持 dashboard:read 权限查看当前身份的待办、进度、通知与截止提醒。 */
+    public DashboardVO dashboard() {
         auth.permission("dashboard:read");
         List<Map<String, Object>> rows = progress();
         List<Map<String, Object>> todos = new ArrayList<>();
         if (auth.role("ADMIN")) {
             for (Map<String, Object> t : pendingTopics()) {
-                todos.add(fields("title", "审核课题：" + t.get("title"), "path", "/topics"));
+                todos.add(fields("title", "审核课题：" + t.get("title"), "path", "/topics/audit"));
             }
             for (Map<String, Object> r : rows) {
-                if (Boolean.TRUE.equals(r.get("score_published")) && !Boolean.TRUE.equals(r.get("archived"))) {
-                    todos.add(fields("title", "归档：" + r.get("name"), "path", "/statistics"));
+                if (
+                    Boolean.TRUE.equals(r.get("score_published")) && !Boolean.TRUE.equals(r.get("archived"))
+                ) {
+                    todos.add(fields("title", "归档：" + r.get("name"), "path", "/archives"));
                 }
             }
         } else if (auth.role("TEACHER")) {
             for (Map<String, Object> m : materials.listMaterials(null)) {
-                if ("待审核".equals(m.get("status"))) {
+                if (BusinessStatus.PENDING.label().equals(m.get("status"))) {
                     todos.add(
                         fields(
                             "title",
                             "审核材料：" + m.get("student_name") + " · " + m.get("title"),
                             "path",
-                            "/materials"
+                            "/pending-reviews"
                         )
                     );
                 }
             }
             for (Map<String, Object> s : reports.pendingSelections(auth.uid())) {
-                todos.add(fields("title", "处理选题申请：" + s.get("name"), "path", "/topics"));
+                todos.add(fields("title", "处理选题申请：" + s.get("name"), "path", "/selections"));
             }
             for (Map<String, Object> r : rows) {
                 if (!materials.passed(id(r.get("student_id")), "task")) {
-                    todos.add(fields("title", "下达任务书：" + r.get("name"), "path", "/materials"));
+                    todos.add(fields("title", "下达任务书：" + r.get("name"), "path", "/materials/task"));
                 }
             }
         } else {
             for (Map<String, Object> r : rows) {
                 if (r.get("topic_id") == null) {
-                    todos.add(fields("title", "浏览课题并提交双选申请", "path", "/topics"));
+                    todos.add(fields("title", "浏览课题并提交双选申请", "path", "/selections"));
                 } else {
                     for (String stage : List.of("proposal", "midterm", "draft", "final")) {
                         Map<String, Object> m = materials.latest(auth.uid(), stage);
-                        if (m != null && "已退回".equals(m.get("status"))) {
-                            todos.add(fields("title", "修改退回材料：" + m.get("title"), "path", "/materials"));
+                        if (m != null && BusinessStatus.RETURNED.label().equals(m.get("status"))) {
+                            todos.add(
+                                fields("title", "修改退回材料：" + m.get("title"), "path", "/my-project")
+                            );
                         }
                     }
                     List<?> missing = (List<?>) r.get("missing_materials");
@@ -158,10 +182,10 @@ public class StatisticsServiceImpl
                                         missing
                                             .stream()
                                             .map(Object::toString)
-                                            .collect(java.util.stream.Collectors.toList())
+                                            .collect(Collectors.toList())
                                     ),
                                 "path",
-                                "/materials"
+                                "/my-project"
                             )
                         );
                     }
@@ -177,28 +201,20 @@ public class StatisticsServiceImpl
             .stream()
             .filter(r -> Boolean.TRUE.equals(r.get("archived")))
             .count();
-        return fields(
-            "studentCount",
+        return new DashboardVO(
             rows.size(),
-            "todoCount",
             todos.size(),
-            "averageProgress",
             Math.round(average),
-            "archiveCount",
             archives,
-            "todos",
             todos,
-            "progress",
             rows,
-            "deadlines",
             workflowService.workflow(),
-            "notices",
             notificationService.notices()
         );
     }
 
-    /** 按允许维度与筛选条件统计学生进度。 */
-    public Object statistics(Map<String, String> filters) {
+    /** 持 stats:read 权限按专业、班级或教师统计，先做身份范围过滤再应用业务筛选。 */
+    public StatisticsVO statistics(Map<String, String> filters) {
         auth.permission("stats:read");
         String by = filters.getOrDefault("groupBy", "major");
         ApiException.require(List.of("major", "class", "teacher").contains(by), "统计维度不正确");
@@ -220,6 +236,6 @@ public class StatisticsServiceImpl
             return cohort != null && !cohort.isBlank() && !cohort.equals(r.get("cohort"));
         });
         List<Map<String, Object>> groups = reports.statistics(auth.scope(), by, filters);
-        return fields("groups", groups, "students", rows);
+        return new StatisticsVO(groups, rows);
     }
 }

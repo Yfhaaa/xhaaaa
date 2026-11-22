@@ -732,3 +732,128 @@ VALUES
         '材料支持 PDF、Word、TXT 及 ZIP，单文件不超过20MB；每次重新提交保留独立版本及审核意见。',
         1
     );
+
+INSERT INTO
+    thesis_review (
+        student_id,
+        reviewer_id,
+        thesis_id,
+        status,
+        comment,
+        score,
+        agree_defense,
+        reviewed_at
+    )
+SELECT
+    7,
+    3,
+    id,
+    '已评阅',
+    '结构完整、论证充分，同意答辩。',
+    86,
+    1,
+    CURRENT_TIMESTAMP
+FROM
+    thesis_info
+WHERE
+    student_id = 7
+    AND stage = 'final';
+
+INSERT INTO
+    plagiarism_check (
+        student_id,
+        thesis_id,
+        platform,
+        rate,
+        file_id,
+        registrar_id
+    )
+SELECT
+    7,
+    id,
+    '演示查重平台',
+    12.5,
+    3,
+    1
+FROM
+    thesis_info
+WHERE
+    student_id = 7
+    AND stage = 'final';
+
+INSERT INTO
+    sys_message (user_id, title, content, path, event_key)
+VALUES
+    (
+        7,
+        '成绩已发布',
+        '毕业设计成绩89.60分，归档材料已齐全。',
+        '/my-project',
+        'demo:score:7'
+    ),
+    (
+        5,
+        '开题报告已退回',
+        '请补充技术路线和进度计划。',
+        '/my-project',
+        'demo:proposal:5'
+    ),
+    (
+        2,
+        '过程管理工作提醒',
+        '请及时查看学生申请与材料待办。',
+        '/pending-reviews',
+        'demo:teacher:2'
+    );
+
+INSERT INTO
+    topic_info (
+        id,
+        title,
+        description,
+        teacher_id,
+        major_id,
+        capacity,
+        status,
+        reviewer_id,
+        review_comment
+    )
+VALUES
+    (
+        5,
+        '跨学科校园数据分析平台',
+        '面向计算机专业的数据分析与协同设计课题。',
+        3,
+        1,
+        2,
+        '已通过',
+        1,
+        '同意发布'
+    );
+
+INSERT INTO
+    topic_change (
+        id,
+        student_id,
+        old_topic_id,
+        new_topic_id,
+        old_teacher_id,
+        new_teacher_id,
+        reason,
+        status,
+        approval_step
+    )
+VALUES
+    (1, 5, 1, 5, 2, 3, '希望调整研究方向，现保留原课题继续完善研究计划。', '已退回', 1);
+
+INSERT INTO
+    review_record (
+        business_type,
+        business_id,
+        student_id,
+        reviewer_id,
+        result,
+        comment
+    )
+VALUES
+    ('topic_change', 1, 5, 2, '已退回', '第1级：请先完善研究计划后再申请变更。');

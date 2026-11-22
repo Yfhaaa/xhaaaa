@@ -14,3 +14,6 @@ run/
 backend/.tools/
 backend/_tools/
 backend/.mvn/wrapper/*.part
+
+__pycache__/
+*.py[cod]

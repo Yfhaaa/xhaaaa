@@ -1,31 +1,36 @@
 package edu.gengdan.gdpm.service.impl;
 
-import static edu.gengdan.gdpm.common.ApiException.require;
-import static edu.gengdan.gdpm.common.Values.*;
-
-import edu.gengdan.gdpm.common.*;
-import edu.gengdan.gdpm.entity.*;
-import edu.gengdan.gdpm.mapper.*;
-import edu.gengdan.gdpm.service.*;
+import edu.gengdan.gdpm.auth.Auth;
+import edu.gengdan.gdpm.common.ApiException;
+import edu.gengdan.gdpm.common.OperLog;
+import edu.gengdan.gdpm.dto.LoginRequest;
+import edu.gengdan.gdpm.entity.SysSession;
+import edu.gengdan.gdpm.entity.User;
+import edu.gengdan.gdpm.mapper.SysSessionMapper;
+import edu.gengdan.gdpm.service.AuthService;
+import edu.gengdan.gdpm.vo.LoginVO;
+import edu.gengdan.gdpm.vo.MessageVO;
+import edu.gengdan.gdpm.vo.UserVO;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Base64;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** AuthService 模块实现，校验权限与业务状态后持久化实体。 */
+/** 匿名校验启用账号与密码，签发十二小时令牌，仅持久化摘要。 已登录用户读取本人脱敏资料、角色与实时权限。 已登录用户注销当前会话，原令牌立即失效。 */
 @Service
 public class AuthServiceImpl extends DomainSupport<SysSessionMapper, SysSession> implements AuthService {
 
-    /** 验证账号后签发限时随机令牌。 */
+    /** 匿名校验启用账号与密码，签发十二小时令牌，仅持久化摘要。 */
     @OperLog("登录")
     @Transactional
-    public Object login(edu.gengdan.gdpm.dto.LoginRequest request) {
+    public LoginVO login(LoginRequest request) {
         User user = users.selectOne(query(User.class).eq(User::getUsername, request.getUsername().trim()));
         if (
             user == null ||
             user.getEnabled() != 1 ||
-            !new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().matches(
+            !new BCryptPasswordEncoder().matches(
                 request.getPassword(),
                 user.getPassword()
             )
@@ -33,36 +38,33 @@ public class AuthServiceImpl extends DomainSupport<SysSessionMapper, SysSession>
             throw new ApiException(401, "用户名或密码错误，或账号已停用");
         }
         byte[] bytes = new byte[32];
-        new java.security.SecureRandom().nextBytes(bytes);
+        new SecureRandom().nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         remove(query(SysSession.class).lt(SysSession::getExpiresAt, LocalDateTime.now()));
-        save(
-            entity(
-                SysSession.class,
-                "token_hash",
-                edu.gengdan.gdpm.auth.Auth.hash(token),
-                "user_id",
-                user.getId(),
-                "expires_at",
-                LocalDateTime.now().plusHours(12)
-            )
-        );
-        return Map.of("token", token, "user", user);
+        SysSession record1 = new SysSession();
+        record1.setTokenHash(Auth.hash(token));
+        record1.setUserId(user.getId());
+        record1.setExpiresAt(LocalDateTime.now().plusHours(12));
+        save(record1);
+        return new LoginVO(token, user);
     }
 
-    /** 返回当前身份及角色权限。 */
-    public Object me() {
+    /** 已登录用户读取本人脱敏资料、角色与实时权限。 */
+    public UserVO me() {
         return auth.me();
     }
 
-    /** 注销当前令牌。 */
+    /** 已登录用户注销当前会话，原令牌立即失效。 */
     @OperLog("退出登录")
     @Transactional
-    public Object logout(String bearer) {
+    public MessageVO logout(String bearer) {
         auth.uid();
         remove(
-            query(SysSession.class).eq(SysSession::getTokenHash, edu.gengdan.gdpm.auth.Auth.hash(bearer.substring(7)))
+            query(SysSession.class).eq(
+                SysSession::getTokenHash,
+                Auth.hash(bearer.substring(7))
+            )
         );
-        return Map.of("message", "已退出");
+        return new MessageVO("已退出");
     }
 }

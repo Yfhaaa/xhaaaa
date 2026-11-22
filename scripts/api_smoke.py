@@ -53,7 +53,7 @@ try:
  page=request('管理员统一分页','/topics?page=1&size=1','admin')
  verify('分页字段与记录数',set(page)=={'records','total','page','size'} and page['page']==1 and page['size']==1 and len(page['records'])==1)
  logs=request('日志落库','/system/logs','admin')
- verify('AOP登录记录存在',any(row['action']=='登录' and row['detail']=='AuthServiceImpl.login' for row in logs))
+ verify('AOP登录记录存在',any(row['action']=='登录' and row['detail'].startswith('POST /api/auth/login') and '来源 ' in row['detail'] for row in logs))
  verify('日志不泄露密码与令牌',all('123456' not in str(row) and all(token not in str(row) for token in tokens.values()) for row in logs))
 except Exception as exc:error=str(exc)
 finally:

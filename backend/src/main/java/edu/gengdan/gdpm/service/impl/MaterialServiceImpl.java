@@ -1,21 +1,34 @@
 package edu.gengdan.gdpm.service.impl;
 
-import static edu.gengdan.gdpm.common.ApiException.require;
-import static edu.gengdan.gdpm.common.Values.*;
-
-import edu.gengdan.gdpm.common.*;
-import edu.gengdan.gdpm.entity.*;
-import edu.gengdan.gdpm.mapper.*;
-import edu.gengdan.gdpm.service.*;
-import java.time.LocalDateTime;
-import java.util.*;
+import edu.gengdan.gdpm.common.ApiException;
+import edu.gengdan.gdpm.common.BusinessStatus;
+import edu.gengdan.gdpm.common.Constants;
+import edu.gengdan.gdpm.common.EntityViews;
+import edu.gengdan.gdpm.dto.MaterialSubmitRequest;
+import edu.gengdan.gdpm.dto.ReviewRequest;
+import edu.gengdan.gdpm.entity.FileRecord;
+import edu.gengdan.gdpm.entity.ProcessMaterial;
+import edu.gengdan.gdpm.mapper.FileRecordMapper;
+import edu.gengdan.gdpm.service.MaterialService;
+import edu.gengdan.gdpm.service.MaterialStageService;
+import edu.gengdan.gdpm.service.MidtermService;
+import edu.gengdan.gdpm.service.ProposalService;
+import edu.gengdan.gdpm.service.TaskBookService;
+import edu.gengdan.gdpm.service.ThesisService;
+import edu.gengdan.gdpm.vo.MessageVO;
+import edu.gengdan.gdpm.vo.SubmissionVO;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-/** MaterialService 模块实现，校验权限与业务状态后持久化实体。 */
+/** 持 material:read 权限查询范围内各阶段全部历史版本。 */
 @Service
-public class MaterialServiceImpl extends DomainSupport<FileRecordMapper, FileRecord> implements MaterialService {
+public class MaterialServiceImpl
+    extends DomainSupport<FileRecordMapper, FileRecord>
+    implements MaterialService
+{
 
     @Autowired
     private TaskBookService taskService;
@@ -46,30 +59,32 @@ public class MaterialServiceImpl extends DomainSupport<FileRecordMapper, FileRec
         }
     }
 
-    /** 校验阶段顺序后保存新材料版本。 */
-    public Object submit(String stage, Map<String, Object> body) {
+    /** 学生按阶段顺序提交本人文件；任务书由指导教师下达，退回重提创建新版本。 */
+    public SubmissionVO submit(String stage, MaterialSubmitRequest body) {
+        validate(body);
         return stageService(stage).submit(stage, body);
     }
 
-    /** 审核当前待审核的最新材料。 */
-    public Object review(String stage, long materialId, Map<String, Object> body) {
+    /** 指导教师仅审核待审核的最新版本，定稿通过还需对应版本查重合格。 */
+    public MessageVO review(String stage, long materialId, ReviewRequest body) {
+        validate(body);
         return stageService(stage).review(stage, materialId, body);
     }
 
-    /** 查询指定阶段的最新版本。 */
+    /** 先校验学生数据范围，再读取指定阶段最新材料，尚未提交时返回空。 */
     public Map<String, Object> latest(long studentId, String stage) {
         auth.student(studentId);
         ProcessMaterial material = stageService(stage).latest(studentId, stage);
         return material == null ? null : EntityViews.view(material);
     }
 
-    /** 判断最新材料是否审核通过。 */
+    /** 仅最新版本状态为已通过时认定阶段完成。 */
     public boolean passed(long studentId, String stage) {
         Map<String, Object> material = latest(studentId, stage);
         return material != null && BusinessStatus.APPROVED.label().equals(material.get("status"));
     }
 
-    /** 查询范围内全部材料版本。 */
+    /** 持 material:read 权限查询范围内各阶段全部历史版本。 */
     public List<Map<String, Object>> listMaterials(String stage) {
         auth.permission("material:read");
         List<Map<String, Object>> result = new ArrayList<>();

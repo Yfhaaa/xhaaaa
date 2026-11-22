@@ -2,10 +2,10 @@
 import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "../../stores/auth";
-const router = useRouter(),
-  auth = useAuth(),
-  loading = ref(false),
-  formRef = ref();
+const router = useRouter();
+const auth = useAuth();
+const loading = ref(false);
+const formRef = ref();
 const form = reactive({ username: "", password: "" });
 const rules = {
   username: [{ required: true, message: "请输入账号", trigger: "blur" }],
@@ -57,27 +57,11 @@ function demo(username) {
         <div class="row-caption">WELCOME TO GDPM</div>
         <h2>登录工作空间</h2>
         <p>毕业设计全过程管理系统</p>
-        <el-form
-          ref="formRef"
-          :model="form"
-          :rules="rules"
-          label-position="top"
-          @submit.prevent="login"
-        >
-          <el-form-item
-            label="账号"
-            prop="username"
-          >
-            <el-input
-              v-model="form.username"
-              placeholder="请输入学号或教师账号"
-              autocomplete="username"
-            />
+        <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent="login">
+          <el-form-item label="账号" prop="username">
+            <el-input v-model="form.username" placeholder="请输入学号或教师账号" autocomplete="username" />
           </el-form-item>
-          <el-form-item
-            label="密码"
-            prop="password"
-          >
+          <el-form-item label="密码" prop="password">
             <el-input
               v-model="form.password"
               type="password"
@@ -86,36 +70,16 @@ function demo(username) {
               autocomplete="current-password"
             />
           </el-form-item>
-          <el-button
-            type="primary"
-            native-type="submit"
-            class="full-width"
-            :loading="loading"
-          >
+          <el-button type="primary" native-type="submit" class="full-width" :loading="loading">
             进入系统 →
           </el-button>
         </el-form>
         <div class="demo-accounts">
           演示空间 · 点击填入账号，密码均为 123456
           <div>
-            <el-button
-              text
-              @click="demo('admin')"
-            >
-              管理员
-            </el-button>
-            <el-button
-              text
-              @click="demo('teacher1')"
-            >
-              指导教师
-            </el-button>
-            <el-button
-              text
-              @click="demo('student1')"
-            >
-              学生
-            </el-button>
+            <el-button text @click="demo('admin')"> 管理员 </el-button>
+            <el-button text @click="demo('teacher1')"> 指导教师 </el-button>
+            <el-button text @click="demo('student1')"> 学生 </el-button>
           </div>
         </div>
       </div>
